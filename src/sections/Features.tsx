@@ -1,51 +1,56 @@
-import { Brain, Box, ShieldCheck, Eye, Layers, Plug, FileText, Cloud, Cpu, CheckCircle } from 'lucide-react'
+import { Brain, Box, ShieldCheck, Eye, Layers, Plug, FileText, Cloud, Cpu, CheckCircle, Palette, SlidersHorizontal } from 'lucide-react'
 
 const Features = () => {
   const features = [
     {
+      icon: Layers,
+      title: '6 Furniture Categories',
+      description: 'Office chairs, dining tables, desks, storage cabinets, sofas, and lighting fixtures. Each with category-specific detection, dimensions, and Revit templates.'
+    },
+    {
       icon: Brain,
-      title: 'Wonder3D++ Reconstruction',
-      description: 'State-of-the-art cross-domain diffusion generates RGB + normal maps simultaneously. 88-92% geometric accuracy—far superior to single-view methods.'
+      title: 'AI Component Detection',
+      description: '5-8 components detected per category with bounding boxes and confidence scores. Category-specific neural networks trained on industry furniture datasets.'
     },
     {
       icon: Box,
-      title: 'Point2CAD Conversion',
-      description: 'Reverse-engineers 3D meshes into parametric B-rep structure with analytical primitives. Achieves 94.3% accuracy on CAD reconstruction.'
+      title: 'Parametric 3D Preview',
+      description: 'Six dedicated 3D models with real-time dimension and material updates. Coarse/Medium/Fine LOD switching matches Revit view representations.'
     },
     {
-      icon: Cpu,
-      title: 'BRepNet Classification',
-      description: 'First neural network operating directly on native B-rep structures. Classifies CAD operations with 4x fewer parameters than PointNet++.'
+      icon: SlidersHorizontal,
+      title: 'Full Revit Parameter Editor',
+      description: 'Dimensions, Identity Data, Materials, and IFC/Standards across 4 tabs. Industry-standard ranges from BIFMA G1, ANSI, and ADA guidelines.'
+    },
+    {
+      icon: Palette,
+      title: 'Visual Material Editor',
+      description: 'Category-specific material slots with color swatch preview. Changes propagate to the 3D preview in real-time for instant visual feedback.'
+    },
+    {
+      icon: ShieldCheck,
+      title: '23-Point Validation',
+      description: '6 categories of automated checks: File & Metadata, Parametric Integrity, Geometry Quality, Parameter Standards, Subcategories, and Materials.'
     },
     {
       icon: FileText,
-      title: 'Catalog OCR Extraction',
-      description: 'PaddleOCR extracts dimensional specifications from manufacturer PDFs with 98% accuracy. No more manual data entry from spec sheets.'
+      title: 'IFC / Classification',
+      description: 'OmniClass, Uniclass 2015, and IFC 4.3 entity mapping auto-populated from category. COBie-compliant identity data for FM handover.'
     },
     {
       icon: Cloud,
-      title: 'Cloud Revit Generation',
-      description: 'Autodesk Design Automation API creates families in the cloud—no local Revit installation needed. Scalable to thousands of families.'
+      title: 'Multi-Format Export',
+      description: 'Revit Family (.rfa), Type Catalog (.txt), Documentation (.pdf), and IFC Export (.ifc). Compatible with Revit 2022-2025.'
     },
     {
-      icon: Layers,
-      title: 'Template Matching',
-      description: '20+ hand-crafted Revit templates matched using ICP algorithm. Hybrid AI + template approach achieves higher accuracy than pure generation.'
+      icon: Cpu,
+      title: 'Wonder3D++ Reconstruction',
+      description: 'Cross-domain diffusion generates RGB + normal maps simultaneously. 88-92% geometric accuracy from state-of-the-art 3D reconstruction.'
     },
     {
       icon: Eye,
       title: 'Interactive 3D Preview',
-      description: 'Review your family in real-time with Three.js before export. Rotate, zoom, and verify geometry matches your expectations.'
-    },
-    {
-      icon: ShieldCheck,
-      title: 'BIM Standards Compliant',
-      description: 'Follows Autodesk Revit Content Style Guide, NBS BIM Toolkit, COBie requirements, and ISO 19650 information standards.'
-    },
-    {
-      icon: CheckCircle,
-      title: 'Automated Validation',
-      description: 'Every family is automatically checked for loadability, parameter functionality, file size limits, and BIM compliance before export.'
+      description: 'Orbit, zoom, and inspect your family in real-time. Grid overlay, wireframe mode, and LOD switching for detailed geometry review.'
     },
     {
       icon: Plug,
@@ -53,32 +58,26 @@ const Features = () => {
       description: 'Direct import to your projects with our pyRevit-based plugin. Skip the download step and streamline your workflow.'
     },
     {
-      icon: Layers,
-      title: 'Batch Processing (Pro)',
-      description: 'Upload up to 20 images at once for catalog processing. Perfect for manufacturers with large product lines.'
-    },
-    {
-      icon: Brain,
-      title: 'Active Learning',
-      description: 'User corrections improve the model over time. The more you use CladeFamily, the better it gets at understanding your furniture.'
+      icon: CheckCircle,
+      title: 'BIM Standards Compliant',
+      description: 'Follows Autodesk Content Style Guide, NBS BIM Toolkit, COBie requirements, ISO 19650, and IFC 4.3 property sets.'
     }
   ]
 
   return (
     <section id="features" className="py-24 bg-[#0a0a0a]">
       <div className="max-w-[1280px] mx-auto px-5">
-        {/* Section Header */}
         <div className="text-center mb-16 scroll-animate">
           <h2 className="text-3xl md:text-4xl font-semibold mb-4">
             Why Choose <span className="text-[#dc5f00]">CladeFamily?</span>
           </h2>
           <p className="text-[#a3a1a1] max-w-3xl mx-auto">
-            We combine the latest research in 3D reconstruction, parametric CAD conversion, 
-            and cloud-based Revit generation. No other platform offers this level of technical sophistication.
+            6 furniture categories, 23 validation checks, industry-standard dimensions,
+            and multi-format export. Built for BIM professionals who need accurate,
+            standards-compliant Revit families.
           </p>
         </div>
 
-        {/* Features Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
             <div
@@ -97,13 +96,12 @@ const Features = () => {
           ))}
         </div>
 
-        {/* Bottom Stats */}
         <div className="scroll-animate mt-16 grid grid-cols-2 md:grid-cols-4 gap-6">
           {[
-            { value: '92-95%', label: 'Combined Accuracy' },
-            { value: '10.2M', label: 'Training Objects' },
-            { value: '<2 min', label: 'Avg Generation Time' },
-            { value: '0.5s', label: 'Cloud Revit API' }
+            { value: '6', label: 'Furniture Categories' },
+            { value: '23', label: 'Validation Checks' },
+            { value: '4', label: 'Export Formats' },
+            { value: '92-95%', label: 'Combined Accuracy' }
           ].map((stat) => (
             <div key={stat.label} className="text-center p-4 bg-[#1a1b1f] border border-[#515151] rounded-lg">
               <div className="text-2xl font-bold text-[#dc5f00] mb-1">{stat.value}</div>

@@ -1,77 +1,77 @@
-import { Upload, Scan, Box, Sliders, Download, Layers } from 'lucide-react'
+import { Search, Upload, Scan, Eye, Sliders, Download } from 'lucide-react'
 
 const HowItWorks = () => {
   const steps = [
     {
       number: '01',
-      icon: Upload,
-      title: 'Multi-Modal Input',
-      description: 'Upload product images, catalog PDFs, or enter dimensions manually. Our system combines multiple data sources for maximum accuracy—no single image can achieve 99% alone.',
+      icon: Search,
+      title: 'Select Furniture Category',
+      description: 'Choose from 6 industry-standard categories. This determines the parametric template, component detection pipeline, BIM classification, and validation rules.',
       details: [
-        'Product images (1-3 angles for best results)',
-        'Catalog PDF with OCR dimension extraction (98% accuracy)',
-        'Manual dimension input (100% accuracy)',
-        'Category selection for template matching'
+        'Office chairs, tables, desks, cabinets, sofas, lighting',
+        'Revit category & subcategory auto-assignment',
+        'OmniClass, Uniclass 2015, IFC entity mapping',
+        'Category-specific templates (4+ per category)'
       ]
     },
     {
       number: '02',
-      icon: Scan,
-      title: 'AI-Powered 3D Reconstruction',
-      description: 'Wonder3D++ generates consistent multi-view RGB + normal maps using cross-domain diffusion. This captures surface geometry far better than single-view methods.',
+      icon: Upload,
+      title: 'Upload Product Image',
+      description: 'Upload product images or catalog PDFs. Our category-aware AI pipeline runs detection steps specific to your furniture type for maximum accuracy.',
       details: [
-        'Cross-domain diffusion (RGB + normals)',
-        '6-view consistency mechanism',
-        'Normal fusion for superior geometry',
-        '88-92% geometric accuracy'
+        'JPG, PNG, PDF support (up to 10MB)',
+        '9-step category-specific analysis pipeline',
+        'Catalog PDF OCR dimension extraction (98%)',
+        'Best results from 3/4 angle, white background'
       ]
     },
     {
       number: '03',
-      icon: Box,
-      title: 'Parametric CAD Conversion',
-      description: 'Point2CAD reverse-engineers the mesh into B-rep structure with analytical primitives. BRepNet then classifies the CAD operations for true parametric editability.',
+      icon: Scan,
+      title: 'AI Component Detection',
+      description: 'Category-specific neural networks detect and classify furniture components with bounding boxes, confidence scores, and dimension estimates from industry standards.',
       details: [
-        'Point cloud → B-rep conversion',
-        'Analytical primitive fitting',
-        'Topological reconstruction',
-        'Operation classification (94.3% accuracy)'
+        '5-8 components detected per category',
+        'BIFMA G1, ANSI/BIFMA, ADA compliance ranges',
+        'Interactive overlay inspection',
+        '88-98% confidence per component'
       ]
     },
     {
       number: '04',
-      icon: Layers,
-      title: 'Template Matching & Refinement',
-      description: 'Our system matches your furniture to curated Revit templates, then uses AI to refine the fit. This hybrid approach achieves higher accuracy than pure generation.',
+      icon: Eye,
+      title: '3D Family Preview',
+      description: 'Interactive Three.js preview with category-specific parametric geometry. Switch between Coarse, Medium, and Fine LOD representations used in Revit views.',
       details: [
-        '20+ hand-crafted furniture templates',
-        'ICP algorithm for optimal fitting',
-        'Dimension scaling to real-world units',
-        'Symmetry detection and enforcement'
+        '6 parametric 3D models (one per category)',
+        'Coarse / Medium / Fine LOD switching',
+        'Real-time dimension and material updates',
+        'Orbit, zoom, and grid controls'
       ]
     },
     {
       number: '05',
       icon: Sliders,
-      title: 'Parameter Configuration',
-      description: 'Review and adjust the generated parameters in our web interface. The 3D preview updates in real-time as you modify dimensions, materials, and BIM data.',
+      title: 'Configure Parameters',
+      description: 'Full Revit parameter editor with 4 tabs: Dimensions, Identity Data, Materials, and IFC/Standards. All values follow industry standards and become editable in Revit.',
       details: [
-        'Interactive 3D preview (Three.js)',
-        'Type & instance parameters',
-        'BIM metadata (manufacturer, cost, etc.)',
-        'Real-time validation'
+        'Category-specific dimension sliders with ranges',
+        'Identity Data (manufacturer, model, cost, keynote)',
+        'Visual material assignment with color swatches',
+        'IFC classification & sustainability parameters'
       ]
     },
     {
       number: '06',
       icon: Download,
-      title: 'Cloud Revit Generation',
-      description: 'Autodesk Design Automation API creates the final .rfa file in the cloud—no local Revit needed. The result is a fully editable, standards-compliant Revit family.',
+      title: 'Validate & Export',
+      description: '23 automated checks across 6 validation categories ensure BIM standards compliance. Export as .rfa with optional type catalog, documentation, and IFC file.',
       details: [
-        'Design Automation for Revit (cloud API)',
-        'Reference planes + dimensional parameters',
-        'BIM standards compliance check',
-        'Ready-to-use .rfa file'
+        '23 checks: file, parametric, geometry, parameters, subcategories, materials',
+        'Revit Family (.rfa) for Revit 2022-2025',
+        'Type Catalog (.txt) for multi-type families',
+        'IFC 4.3 export for open BIM exchange'
       ]
     }
   ]
@@ -79,38 +79,35 @@ const HowItWorks = () => {
   return (
     <section id="how-it-works" className="py-24 bg-[#111]">
       <div className="max-w-[1280px] mx-auto px-5">
-        {/* Section Header */}
         <div className="text-center mb-16 scroll-animate">
           <h2 className="text-3xl md:text-4xl font-semibold mb-4">
             How <span className="text-[#dc5f00]">CladeFamily</span> Works
           </h2>
           <p className="text-[#a3a1a1] max-w-3xl mx-auto">
-            Our hybrid pipeline combines state-of-the-art AI models with curated templates 
-            and cloud-based Revit generation. No single approach achieves 99% accuracy—but 
-            together, we reach 92-95% for production-ready families.
+            A 6-step guided workflow that combines AI-powered component detection,
+            category-specific parametric templates, and comprehensive BIM standards
+            validation to produce production-ready Revit families.
           </p>
         </div>
 
-        {/* Pipeline Overview */}
         <div className="scroll-animate mb-16 p-6 bg-[#1a1b1f] border border-[#515151] rounded-lg">
           <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
-            {['Image/PDF', 'Wonder3D++', 'Point2CAD', 'BRepNet', 'Templates', 'Design Automation', 'Revit .rfa'].map((step, i, arr) => (
+            {['Category', 'Upload', 'Detection', '3D Preview', 'Parameters', 'Export'].map((step, i, arr) => (
               <div key={step} className="flex items-center gap-3">
                 <span className="px-3 py-2 bg-[#0a0a0a] border border-[#515151] rounded-lg font-medium">
                   {step}
                 </span>
                 {i < arr.length - 1 && (
-                  <span className="text-[#dc5f00]">→</span>
+                  <span className="text-[#dc5f00]">&#8594;</span>
                 )}
               </div>
             ))}
           </div>
           <p className="text-center text-sm text-[#666] mt-4">
-            Combined accuracy: <span className="text-[#dc5f00] font-medium">92-95%</span> with multi-modal input
+            6 categories &#183; 23 validation checks &#183; 4 export formats &#183; Industry-standard dimensions
           </p>
         </div>
 
-        {/* Steps */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {steps.map((step, index) => (
             <div
@@ -142,7 +139,6 @@ const HowItWorks = () => {
           ))}
         </div>
 
-        {/* Why Hybrid */}
         <div className="scroll-animate mt-16 p-8 bg-[#1a1b1f] border border-[#515151] rounded-lg">
           <h3 className="text-xl font-medium mb-6 text-center">Why a Hybrid Approach?</h3>
           <div className="grid md:grid-cols-3 gap-6">
