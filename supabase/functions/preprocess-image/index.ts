@@ -11,6 +11,7 @@ const corsHeaders = {
 interface PreprocessRequest {
   projectId: string;
   imageUrl: string;
+  provider?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -26,30 +27,42 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { projectId, imageUrl }: PreprocessRequest = await req.json();
+    const { projectId, imageUrl, provider = "bria" }: PreprocessRequest =
+      await req.json();
 
-    await supabase
-      .from("processing_jobs")
-      .insert({
-        project_id: projectId,
-        job_type: "preprocess",
-        status: "processing",
-        api_provider: "replicate-sam",
-      });
+    const jobRecord = await supabase.from("processing_jobs").insert({
+      project_id: projectId,
+      job_type: "preprocess",
+      status: "processing",
+      api_provider: provider,
+    }).select().single();
 
-    const processedUrl = await removeBackground(imageUrl);
+    if (jobRecord.error) throw jobRecord.error;
+
+    const result = await removeBackground(imageUrl, provider);
 
     await supabase
       .from("projects")
       .update({
-        processed_image_url: processedUrl,
+        processed_image_url: result.processedUrl,
       })
       .eq("id", projectId);
+
+    await supabase
+      .from("processing_jobs")
+      .update({
+        status: "completed",
+        result: result,
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", jobRecord.data.id);
 
     return new Response(
       JSON.stringify({
         success: true,
-        processedImageUrl: processedUrl,
+        processedImageUrl: result.processedUrl,
+        provider: result.provider,
+        mode: result.status,
       }),
       {
         headers: {
@@ -77,33 +90,111 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-async function removeBackground(imageUrl: string): Promise<string> {
+async function removeBackground(
+  imageUrl: string,
+  provider: string
+): Promise<{ processedUrl: string; provider: string; status: string }> {
   const REPLICATE_API_KEY = Deno.env.get("REPLICATE_API_KEY");
 
   if (!REPLICATE_API_KEY) {
-    return imageUrl;
+    console.log("No REPLICATE_API_KEY found, returning original image");
+    return {
+      processedUrl: imageUrl,
+      provider: "none",
+      status: "demo",
+    };
   }
 
-  const response = await fetch("https://api.replicate.com/v1/predictions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${REPLICATE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      version:
-        "fb8af171cfa1616ddcf1242c093f9c46bcada5ad4cf6f2fbe8b81b330ec5c003",
-      input: {
-        image: imageUrl,
+  let modelConfig: { model: string; input: Record<string, any> };
+
+  switch (provider) {
+    case "bria":
+      modelConfig = {
+        model: "lucataco/remove-bg",
+        input: { image: imageUrl },
+      };
+      break;
+    case "rmbg":
+      modelConfig = {
+        model: "cjwbw/rembg",
+        input: { image: imageUrl },
+      };
+      break;
+    case "birefnet":
+      modelConfig = {
+        model: "smoretalk/birefnet-massive",
+        input: { image: imageUrl },
+      };
+      break;
+    default:
+      modelConfig = {
+        model: "lucataco/remove-bg",
+        input: { image: imageUrl },
+      };
+  }
+
+  try {
+    const response = await fetch("https://api.replicate.com/v1/predictions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${REPLICATE_API_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "wait=60",
       },
-    }),
-  });
+      body: JSON.stringify({
+        model: modelConfig.model,
+        input: modelConfig.input,
+      }),
+    });
 
-  const prediction = await response.json();
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Replicate API error:", errorText);
+      throw new Error(`Replicate API error: ${response.status}`);
+    }
 
-  const result = await pollForResult(prediction.urls.get, REPLICATE_API_KEY);
+    const prediction = await response.json();
 
-  return result.output || imageUrl;
+    if (prediction.status === "succeeded") {
+      const outputUrl = extractOutputUrl(prediction.output);
+      return {
+        processedUrl: outputUrl || imageUrl,
+        provider: provider,
+        status: "success",
+      };
+    }
+
+    if (prediction.urls?.get) {
+      const result = await pollForResult(prediction.urls.get, REPLICATE_API_KEY);
+      const outputUrl = extractOutputUrl(result.output);
+      return {
+        processedUrl: outputUrl || imageUrl,
+        provider: provider,
+        status: "success",
+      };
+    }
+
+    return {
+      processedUrl: imageUrl,
+      provider: provider,
+      status: "fallback",
+    };
+  } catch (error) {
+    console.error("Background removal failed:", error);
+    return {
+      processedUrl: imageUrl,
+      provider: "none",
+      status: "error",
+    };
+  }
+}
+
+function extractOutputUrl(output: any): string | null {
+  if (!output) return null;
+  if (typeof output === "string") return output;
+  if (Array.isArray(output) && output.length > 0) return output[0];
+  if (typeof output === "object" && output.image) return output.image;
+  return null;
 }
 
 async function pollForResult(

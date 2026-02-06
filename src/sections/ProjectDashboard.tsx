@@ -199,7 +199,7 @@ export default function ProjectDashboard({
                       onClick={() => window.open(project.revit_family_url!, "_blank")}
                     >
                       <Download className="w-4 h-4 mr-1" />
-                      .rfa
+                      IFC
                     </Button>
                   )}
 

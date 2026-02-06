@@ -461,7 +461,7 @@ export default function ProjectWorkflow({
                   onClick={() => window.open(project.revit_family_url!, "_blank")}
                 >
                   <Download className="w-5 h-5 mr-2" />
-                  Download Revit Family (.rfa)
+                  Download IFC File
                 </Button>
               ) : (
                 <Button
