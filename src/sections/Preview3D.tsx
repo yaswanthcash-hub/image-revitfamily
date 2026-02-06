@@ -3,10 +3,10 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Grid } from '@react-three/drei'
 import * as THREE from 'three'
 import { RotateCcw, Grid3X3 } from 'lucide-react'
-import type { FurnitureCategory } from '../data/furniture-categories'
+import type { RevitFamilyCategory } from '../data/revit-categories'
 
 interface Preview3DProps {
-  category: FurnitureCategory
+  category: RevitFamilyCategory
   dimensions: Record<string, number>
 }
 
@@ -14,6 +14,137 @@ const S = 0.02
 
 function d(dims: Record<string, number>, key: string, fallback: number) {
   return (dims[key] ?? fallback) * S
+}
+
+function SingleDoorModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  useFrame((state) => {
+    if (ref.current) ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15
+  })
+
+  const w = d(dimensions, 'width', 36)
+  const h = d(dimensions, 'height', 84)
+  const t = d(dimensions, 'thickness', 1.75)
+  const fw = d(dimensions, 'frameWidth', 4.5)
+  const fd = d(dimensions, 'frameDepth', 4.875)
+
+  return (
+    <group ref={ref}>
+      <mesh position={[-w/2 - fw/2, h/2, 0]}>
+        <boxGeometry args={[fw, h, fd]} />
+        <meshStandardMaterial color="#8B7355" />
+      </mesh>
+      <mesh position={[w/2 + fw/2, h/2, 0]}>
+        <boxGeometry args={[fw, h, fd]} />
+        <meshStandardMaterial color="#8B7355" />
+      </mesh>
+      <mesh position={[0, h + fw/2, 0]}>
+        <boxGeometry args={[w + fw*2, fw, fd]} />
+        <meshStandardMaterial color="#8B7355" />
+      </mesh>
+      <mesh position={[0, h/2, 0]}>
+        <boxGeometry args={[w, h, t]} />
+        <meshStandardMaterial color="#A0522D" />
+      </mesh>
+      <mesh position={[w/2 - 0.04, h*0.45, t/2 + 0.01]} rotation={[Math.PI/2, 0, 0]}>
+        <cylinderGeometry args={[0.02, 0.02, 0.03, 16]} />
+        <meshStandardMaterial color="#C0C0C0" metalness={0.8} roughness={0.2} />
+      </mesh>
+      <mesh position={[w/2 - 0.04, h*0.45, t/2 + 0.035]}>
+        <boxGeometry args={[0.03, 0.08, 0.02]} />
+        <meshStandardMaterial color="#C0C0C0" metalness={0.8} roughness={0.2} />
+      </mesh>
+    </group>
+  )
+}
+
+function DoubleDoorModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  useFrame((state) => {
+    if (ref.current) ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15
+  })
+
+  const w = d(dimensions, 'width', 72)
+  const h = d(dimensions, 'height', 84)
+  const t = d(dimensions, 'thickness', 1.75)
+  const fw = d(dimensions, 'frameWidth', 4.5)
+  const lw = d(dimensions, 'leafWidth', 36)
+
+  return (
+    <group ref={ref}>
+      <mesh position={[-w/2 - fw/2, h/2, 0]}>
+        <boxGeometry args={[fw, h, fw]} />
+        <meshStandardMaterial color="#8B7355" />
+      </mesh>
+      <mesh position={[w/2 + fw/2, h/2, 0]}>
+        <boxGeometry args={[fw, h, fw]} />
+        <meshStandardMaterial color="#8B7355" />
+      </mesh>
+      <mesh position={[0, h + fw/2, 0]}>
+        <boxGeometry args={[w + fw*2, fw, fw]} />
+        <meshStandardMaterial color="#8B7355" />
+      </mesh>
+      <mesh position={[-lw/2, h/2, 0]}>
+        <boxGeometry args={[lw - 0.005, h, t]} />
+        <meshStandardMaterial color="#A0522D" />
+      </mesh>
+      <mesh position={[lw/2, h/2, 0]}>
+        <boxGeometry args={[lw - 0.005, h, t]} />
+        <meshStandardMaterial color="#A0522D" />
+      </mesh>
+      {[-1, 1].map(side => (
+        <mesh key={side} position={[side * (lw/2 - 0.04), h*0.45, t/2 + 0.02]}>
+          <sphereGeometry args={[0.02, 16, 16]} />
+          <meshStandardMaterial color="#C0C0C0" metalness={0.8} roughness={0.2} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function WindowModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  useFrame((state) => {
+    if (ref.current) ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15
+  })
+
+  const w = d(dimensions, 'width', 36)
+  const h = d(dimensions, 'height', 48)
+  const fw = d(dimensions, 'frameWidth', 2.5)
+  const sillH = d(dimensions, 'sillHeight', 36)
+
+  return (
+    <group ref={ref} position={[0, sillH, 0]}>
+      <mesh position={[-w/2 - fw/2, h/2, 0]}>
+        <boxGeometry args={[fw, h, fw]} />
+        <meshStandardMaterial color="#E8E8E8" />
+      </mesh>
+      <mesh position={[w/2 + fw/2, h/2, 0]}>
+        <boxGeometry args={[fw, h, fw]} />
+        <meshStandardMaterial color="#E8E8E8" />
+      </mesh>
+      <mesh position={[0, h + fw/2, 0]}>
+        <boxGeometry args={[w + fw*2, fw, fw]} />
+        <meshStandardMaterial color="#E8E8E8" />
+      </mesh>
+      <mesh position={[0, -fw/2, 0]}>
+        <boxGeometry args={[w + fw*2, fw, fw * 1.5]} />
+        <meshStandardMaterial color="#E8E8E8" />
+      </mesh>
+      <mesh position={[0, h/2, 0]}>
+        <boxGeometry args={[w, h, 0.02]} />
+        <meshStandardMaterial color="#87CEEB" transparent opacity={0.4} />
+      </mesh>
+      <mesh position={[0, h/2, 0]}>
+        <boxGeometry args={[0.02, h, 0.03]} />
+        <meshStandardMaterial color="#E8E8E8" />
+      </mesh>
+      <mesh position={[0, h/2, 0]}>
+        <boxGeometry args={[w, 0.02, 0.03]} />
+        <meshStandardMaterial color="#E8E8E8" />
+      </mesh>
+    </group>
+  )
 }
 
 function AccentChairModel({ dimensions }: { dimensions: Record<string, number> }) {
@@ -28,66 +159,35 @@ function AccentChairModel({ dimensions }: { dimensions: Record<string, number> }
   const bh = d(dimensions, 'backHeight', 20)
   const ow = d(dimensions, 'overallWidth', 28)
 
-  const cushionThick = 0.06
-  const backThick = 0.07
-  const wingDepth = sd * 0.6
-
   return (
     <group ref={ref}>
       <mesh position={[0, sh, sd * 0.05]}>
-        <boxGeometry args={[sw, cushionThick, sd * 0.9]} />
+        <boxGeometry args={[sw, 0.06, sd * 0.9]} />
         <meshStandardMaterial color="#5BA3C9" />
       </mesh>
-      <mesh position={[0, sh + cushionThick / 2 + 0.01, sd * 0.08]}>
-        <boxGeometry args={[sw * 0.85, cushionThick * 0.6, sd * 0.75]} />
-        <meshStandardMaterial color="#6DB8D8" />
-      </mesh>
-      <mesh position={[0, sh + bh * 0.5, -sd / 2 + backThick / 2 + 0.02]}>
-        <boxGeometry args={[sw, bh, backThick]} />
+      <mesh position={[0, sh + bh * 0.5, -sd / 2 + 0.04]}>
+        <boxGeometry args={[sw, bh, 0.07]} />
         <meshStandardMaterial color="#5BA3C9" />
       </mesh>
-      <mesh position={[0, sh + bh * 0.55, -sd / 2 + backThick + 0.01]}>
-        <boxGeometry args={[sw * 0.82, bh * 0.75, 0.04]} />
-        <meshStandardMaterial color="#6DB8D8" />
-      </mesh>
-      <mesh position={[-ow / 2 + 0.025, sh + bh * 0.35, -sd / 2 + wingDepth / 2 + 0.02]}>
-        <boxGeometry args={[0.05, bh * 0.7, wingDepth]} />
+      <mesh position={[-ow / 2 + 0.03, sh + bh * 0.3, -sd * 0.15]}>
+        <boxGeometry args={[0.06, bh * 0.6, sd * 0.5]} />
         <meshStandardMaterial color="#4A92B8" />
       </mesh>
-      <mesh position={[ow / 2 - 0.025, sh + bh * 0.35, -sd / 2 + wingDepth / 2 + 0.02]}>
-        <boxGeometry args={[0.05, bh * 0.7, wingDepth]} />
+      <mesh position={[ow / 2 - 0.03, sh + bh * 0.3, -sd * 0.15]}>
+        <boxGeometry args={[0.06, bh * 0.6, sd * 0.5]} />
         <meshStandardMaterial color="#4A92B8" />
       </mesh>
-      <mesh position={[-ow / 2 + 0.04, sh + 0.03, sd * 0.05]}>
-        <boxGeometry args={[0.06, 0.06, sd * 0.55]} />
-        <meshStandardMaterial color="#4A92B8" />
-      </mesh>
-      <mesh position={[ow / 2 - 0.04, sh + 0.03, sd * 0.05]}>
-        <boxGeometry args={[0.06, 0.06, sd * 0.55]} />
-        <meshStandardMaterial color="#4A92B8" />
-      </mesh>
-      {[
-        { x: -1, z: 1, splayX: -0.06, splayZ: 0.04 },
-        { x: 1, z: 1, splayX: 0.06, splayZ: 0.04 },
-        { x: -1, z: -1, splayX: -0.04, splayZ: -0.03 },
-        { x: 1, z: -1, splayX: 0.04, splayZ: -0.03 },
-      ].map((leg, i) => {
-        const lx = (sw / 2 - 0.04) * leg.x + leg.splayX
-        const lz = (sd / 2 - 0.04) * leg.z + leg.splayZ
-        const rotX = leg.z > 0 ? -0.1 : 0.1
-        const rotZ = leg.x > 0 ? 0.1 : -0.1
-        return (
-          <mesh key={i} position={[lx, sh / 2, lz]} rotation={[rotX, 0, rotZ]}>
-            <cylinderGeometry args={[0.016, 0.01, sh, 8]} />
-            <meshStandardMaterial color="#C8A064" />
-          </mesh>
-        )
-      })}
+      {[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([x, z], i) => (
+        <mesh key={i} position={[(sw/2 - 0.03) * x, sh/2, (sd/2 - 0.03) * z]} rotation={[z * 0.08, 0, -x * 0.08]}>
+          <cylinderGeometry args={[0.015, 0.01, sh, 8]} />
+          <meshStandardMaterial color="#C8A064" />
+        </mesh>
+      ))}
     </group>
   )
 }
 
-function ChairModel({ dimensions }: { dimensions: Record<string, number> }) {
+function OfficeChairModel({ dimensions }: { dimensions: Record<string, number> }) {
   const ref = useRef<THREE.Group>(null)
   useFrame((state) => {
     if (ref.current) ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15
@@ -110,31 +210,25 @@ function ChairModel({ dimensions }: { dimensions: Record<string, number> }) {
         <meshStandardMaterial color="#3a3a3a" />
       </mesh>
       {[-1, 1].map(side => (
-        <group key={side}>
-          <mesh position={[side * (aw / 2), sh + 0.06, 0]}>
-            <boxGeometry args={[0.04, 0.03, sd * 0.5]} />
-            <meshStandardMaterial color="#555" />
-          </mesh>
-          <mesh position={[side * (aw / 2), sh - 0.06, 0]}>
-            <boxGeometry args={[0.03, sh * 0.35, 0.03]} />
-            <meshStandardMaterial color="#555" />
-          </mesh>
-        </group>
+        <mesh key={side} position={[side * (aw / 2), sh + 0.04, 0]}>
+          <boxGeometry args={[0.04, 0.03, sd * 0.4]} />
+          <meshStandardMaterial color="#555" />
+        </mesh>
       ))}
       <mesh position={[0, sh / 2, 0]}>
-        <cylinderGeometry args={[0.03, 0.03, sh, 12]} />
+        <cylinderGeometry args={[0.025, 0.025, sh, 12]} />
         <meshStandardMaterial color="#888" metalness={0.7} roughness={0.3} />
       </mesh>
       {[0, 72, 144, 216, 288].map((a) => {
         const rad = (a * Math.PI) / 180
         return (
           <group key={a}>
-            <mesh position={[Math.cos(rad) * 0.18, 0.025, Math.sin(rad) * 0.18]} rotation={[0, rad, 0]}>
-              <boxGeometry args={[0.36, 0.02, 0.025]} />
+            <mesh position={[Math.cos(rad) * 0.15, 0.02, Math.sin(rad) * 0.15]} rotation={[0, rad, 0]}>
+              <boxGeometry args={[0.3, 0.015, 0.02]} />
               <meshStandardMaterial color="#888" metalness={0.7} roughness={0.3} />
             </mesh>
-            <mesh position={[Math.cos(rad) * 0.35, 0.02, Math.sin(rad) * 0.35]}>
-              <sphereGeometry args={[0.022, 8, 8]} />
+            <mesh position={[Math.cos(rad) * 0.28, 0.015, Math.sin(rad) * 0.28]}>
+              <sphereGeometry args={[0.018, 8, 8]} />
               <meshStandardMaterial color="#222" />
             </mesh>
           </group>
@@ -152,15 +246,9 @@ function SofaModel({ dimensions }: { dimensions: Record<string, number> }) {
 
   const sh = d(dimensions, 'seatHeight', 17)
   const oh = d(dimensions, 'overallHeight', 34)
-  const ow = d(dimensions, 'overallWidth', 72)
+  const ow = d(dimensions, 'overallWidth', 84)
   const od = d(dimensions, 'overallDepth', 36)
   const armH = d(dimensions, 'armHeight', 26)
-  const seatD = d(dimensions, 'seatDepth', 22)
-
-  const backH = oh - sh
-  const innerW = ow * 0.82
-  const armW = ow * 0.08
-  const cushionT = 0.06
 
   return (
     <group ref={ref}>
@@ -168,40 +256,22 @@ function SofaModel({ dimensions }: { dimensions: Record<string, number> }) {
         <boxGeometry args={[ow, sh * 0.9, od]} />
         <meshStandardMaterial color="#C4A77D" />
       </mesh>
-      <mesh position={[0, sh + cushionT / 2, od * 0.08]}>
-        <boxGeometry args={[innerW, cushionT, seatD]} />
+      <mesh position={[0, sh + 0.03, od * 0.08]}>
+        <boxGeometry args={[ow * 0.8, 0.06, od * 0.6]} />
         <meshStandardMaterial color="#D4B78D" />
       </mesh>
-      {[-1, 0, 1].map(i => (
-        <mesh key={`sc${i}`} position={[i * (innerW / 3), sh + cushionT + 0.01, od * 0.08]}>
-          <boxGeometry args={[innerW / 3 - 0.01, 0.02, seatD * 0.9]} />
-          <meshStandardMaterial color="#DBBF97" />
-        </mesh>
-      ))}
-      <mesh position={[0, sh + backH * 0.45, -od / 2 + 0.04]}>
-        <boxGeometry args={[innerW, backH * 0.85, 0.08]} />
+      <mesh position={[0, sh + (oh - sh) * 0.45, -od / 2 + 0.04]}>
+        <boxGeometry args={[ow * 0.8, (oh - sh) * 0.85, 0.08]} />
         <meshStandardMaterial color="#C4A77D" />
       </mesh>
-      {[-1, 0, 1].map(i => (
-        <mesh key={`bc${i}`} position={[i * (innerW / 3), sh + backH * 0.45, -od / 2 + 0.09]}>
-          <boxGeometry args={[innerW / 3 - 0.01, backH * 0.65, 0.04]} />
-          <meshStandardMaterial color="#D4B78D" />
-        </mesh>
-      ))}
-      <mesh position={[-ow / 2 + armW / 2, armH * 0.5, 0]}>
-        <boxGeometry args={[armW, armH, od * 0.9]} />
+      <mesh position={[-ow / 2 + ow * 0.04, armH * 0.5, 0]}>
+        <boxGeometry args={[ow * 0.08, armH, od * 0.9]} />
         <meshStandardMaterial color="#B89A6A" />
       </mesh>
-      <mesh position={[ow / 2 - armW / 2, armH * 0.5, 0]}>
-        <boxGeometry args={[armW, armH, od * 0.9]} />
+      <mesh position={[ow / 2 - ow * 0.04, armH * 0.5, 0]}>
+        <boxGeometry args={[ow * 0.08, armH, od * 0.9]} />
         <meshStandardMaterial color="#B89A6A" />
       </mesh>
-      {[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([x, z], i) => (
-        <mesh key={i} position={[(ow / 2 - 0.06) * x, 0.025, (od / 2 - 0.06) * z]}>
-          <cylinderGeometry args={[0.02, 0.015, 0.05, 8]} />
-          <meshStandardMaterial color="#5C4830" />
-        </mesh>
-      ))}
     </group>
   )
 }
@@ -224,8 +294,8 @@ function TableModel({ dimensions }: { dimensions: Record<string, number> }) {
         <meshStandardMaterial color="#A0522D" />
       </mesh>
       {[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([x, z], i) => (
-        <mesh key={i} position={[(l / 2 - 0.06) * x, h / 2, (w / 2 - 0.06) * z]}>
-          <boxGeometry args={[0.05, h, 0.05]} />
+        <mesh key={i} position={[(l / 2 - 0.05) * x, h / 2, (w / 2 - 0.05) * z]}>
+          <boxGeometry args={[0.04, h, 0.04]} />
           <meshStandardMaterial color="#8B4513" />
         </mesh>
       ))}
@@ -242,7 +312,6 @@ function DeskModel({ dimensions }: { dimensions: Record<string, number> }) {
   const h = d(dimensions, 'deskHeight', 29)
   const dw = d(dimensions, 'deskWidth', 60)
   const dd = d(dimensions, 'deskDepth', 30)
-  const mh = d(dimensions, 'modestyHeight', 12)
 
   return (
     <group ref={ref}>
@@ -258,10 +327,6 @@ function DeskModel({ dimensions }: { dimensions: Record<string, number> }) {
         <boxGeometry args={[0.04, h, dd * 0.88]} />
         <meshStandardMaterial color="#C0B090" />
       </mesh>
-      <mesh position={[0, h - mh / 2 - 0.04, -dd / 2 + 0.015]}>
-        <boxGeometry args={[dw * 0.85, mh, 0.02]} />
-        <meshStandardMaterial color="#B8A888" />
-      </mesh>
     </group>
   )
 }
@@ -272,9 +337,9 @@ function CabinetModel({ dimensions }: { dimensions: Record<string, number> }) {
     if (ref.current) ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15
   })
 
-  const ch = d(dimensions, 'cabinetHeight', 42)
+  const ch = d(dimensions, 'cabinetHeight', 72)
   const cw = d(dimensions, 'cabinetWidth', 36)
-  const cd = d(dimensions, 'cabinetDepth', 18)
+  const cd = d(dimensions, 'cabinetDepth', 24)
   const tk = d(dimensions, 'toeKickHeight', 4)
 
   return (
@@ -288,8 +353,8 @@ function CabinetModel({ dimensions }: { dimensions: Record<string, number> }) {
         <meshStandardMaterial color="#999" />
       </mesh>
       {[-1, 1].map(side => (
-        <mesh key={side} position={[side * 0.04, tk + (ch - tk) * 0.65, cd / 2 + 0.012]}>
-          <boxGeometry args={[0.008, 0.06, 0.012]} />
+        <mesh key={side} position={[side * 0.04, tk + (ch - tk) * 0.65, cd / 2 + 0.01]}>
+          <boxGeometry args={[0.008, 0.05, 0.01]} />
           <meshStandardMaterial color="#999" metalness={0.7} roughness={0.3} />
         </mesh>
       ))}
@@ -297,17 +362,91 @@ function CabinetModel({ dimensions }: { dimensions: Record<string, number> }) {
         <boxGeometry args={[cw - 0.04, tk, cd - 0.04]} />
         <meshStandardMaterial color="#666" />
       </mesh>
-      {[0.33, 0.66].map(f => (
-        <mesh key={f} position={[0, tk + (ch - tk) * f, cd / 2 + 0.0015]}>
-          <boxGeometry args={[cw - 0.04, 0.003, 0.001]} />
-          <meshStandardMaterial color="#999" />
-        </mesh>
-      ))}
     </group>
   )
 }
 
-function PendantModel({ dimensions }: { dimensions: Record<string, number> }) {
+function SteelColumnModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  useFrame((state) => {
+    if (ref.current) ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15
+  })
+
+  const depth = d(dimensions, 'depth', 12)
+  const bf = d(dimensions, 'flangeWidth', 8)
+  const tf = d(dimensions, 'flangeThickness', 0.75)
+  const tw = d(dimensions, 'webThickness', 0.5)
+  const len = d(dimensions, 'length', 120)
+
+  return (
+    <group ref={ref}>
+      <mesh position={[0, len/2, -depth/2 + tf/2]}>
+        <boxGeometry args={[bf, len, tf]} />
+        <meshStandardMaterial color="#708090" metalness={0.6} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, len/2, depth/2 - tf/2]}>
+        <boxGeometry args={[bf, len, tf]} />
+        <meshStandardMaterial color="#708090" metalness={0.6} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, len/2, 0]}>
+        <boxGeometry args={[tw, len, depth - tf*2]} />
+        <meshStandardMaterial color="#708090" metalness={0.6} roughness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+function ConcreteColumnModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  useFrame((state) => {
+    if (ref.current) ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15
+  })
+
+  const w = d(dimensions, 'width', 24)
+  const depth = d(dimensions, 'depth', 24)
+  const len = d(dimensions, 'length', 120)
+
+  return (
+    <group ref={ref}>
+      <mesh position={[0, len/2, 0]}>
+        <boxGeometry args={[w, len, depth]} />
+        <meshStandardMaterial color="#A0A0A0" roughness={0.8} />
+      </mesh>
+    </group>
+  )
+}
+
+function SteelBeamModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  useFrame((state) => {
+    if (ref.current) ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15
+  })
+
+  const depth = d(dimensions, 'depth', 18)
+  const bf = d(dimensions, 'flangeWidth', 7.5)
+  const tf = d(dimensions, 'flangeThickness', 0.75)
+  const tw = d(dimensions, 'webThickness', 0.45)
+  const len = d(dimensions, 'length', 240)
+
+  return (
+    <group ref={ref} position={[0, depth/2 + 0.1, 0]}>
+      <mesh position={[0, depth/2 - tf/2, 0]}>
+        <boxGeometry args={[len, tf, bf]} />
+        <meshStandardMaterial color="#708090" metalness={0.6} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, -depth/2 + tf/2, 0]}>
+        <boxGeometry args={[len, tf, bf]} />
+        <meshStandardMaterial color="#708090" metalness={0.6} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[len, depth - tf*2, tw]} />
+        <meshStandardMaterial color="#708090" metalness={0.6} roughness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+function PendantLightModel({ dimensions }: { dimensions: Record<string, number> }) {
   const ref = useRef<THREE.Group>(null)
   useFrame((state) => {
     if (ref.current) ref.current.rotation.y = state.clock.elapsedTime * 0.5
@@ -340,27 +479,244 @@ function PendantModel({ dimensions }: { dimensions: Record<string, number> }) {
   )
 }
 
+function RecessedLightModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  const ad = d(dimensions, 'apertureDiameter', 6)
+  const hh = d(dimensions, 'housingHeight', 8)
+
+  return (
+    <group ref={ref} position={[0, hh, 0]}>
+      <mesh position={[0, -hh/2, 0]}>
+        <cylinderGeometry args={[ad/2, ad/2 * 0.9, hh, 24]} />
+        <meshStandardMaterial color="#E8E8E8" />
+      </mesh>
+      <mesh position={[0, -hh + 0.02, 0]}>
+        <cylinderGeometry args={[ad/2 + 0.01, ad/2 + 0.01, 0.02, 24]} />
+        <meshStandardMaterial color="#FFFFFF" />
+      </mesh>
+      <mesh position={[0, -hh + 0.04, 0]}>
+        <sphereGeometry args={[ad/4, 16, 16]} />
+        <meshStandardMaterial color="#FFFACD" emissive="#FFF8DC" emissiveIntensity={0.3} />
+      </mesh>
+    </group>
+  )
+}
+
+function ElectricalPanelModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  useFrame((state) => {
+    if (ref.current) ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15
+  })
+
+  const ph = d(dimensions, 'panelHeight', 36)
+  const pw = d(dimensions, 'panelWidth', 20)
+  const pd = d(dimensions, 'panelDepth', 6)
+
+  return (
+    <group ref={ref}>
+      <mesh position={[0, ph/2, 0]}>
+        <boxGeometry args={[pw, ph, pd]} />
+        <meshStandardMaterial color="#404040" metalness={0.4} roughness={0.6} />
+      </mesh>
+      <mesh position={[0, ph/2, pd/2 + 0.002]}>
+        <boxGeometry args={[pw * 0.9, ph * 0.9, 0.01]} />
+        <meshStandardMaterial color="#505050" metalness={0.5} roughness={0.5} />
+      </mesh>
+      <mesh position={[pw/2 - 0.03, ph/2, pd/2 + 0.015]}>
+        <boxGeometry args={[0.015, 0.04, 0.02]} />
+        <meshStandardMaterial color="#808080" metalness={0.7} roughness={0.3} />
+      </mesh>
+    </group>
+  )
+}
+
+function AirTerminalModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  const fw = d(dimensions, 'faceWidth', 24)
+  const fl = d(dimensions, 'faceLength', 24)
+
+  return (
+    <group ref={ref}>
+      <mesh position={[0, 0.02, 0]}>
+        <boxGeometry args={[fw, 0.02, fl]} />
+        <meshStandardMaterial color="#E8E8E8" />
+      </mesh>
+      <mesh position={[0, 0.01, 0]}>
+        <boxGeometry args={[fw * 0.85, 0.01, fl * 0.85]} />
+        <meshStandardMaterial color="#D0D0D0" />
+      </mesh>
+      {[-2, -1, 0, 1, 2].map(i => (
+        <mesh key={i} position={[i * fw * 0.15, 0.015, 0]}>
+          <boxGeometry args={[0.005, 0.01, fl * 0.8]} />
+          <meshStandardMaterial color="#C0C0C0" />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function ToiletModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  useFrame((state) => {
+    if (ref.current) ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15
+  })
+
+  const bh = d(dimensions, 'bowlHeight', 15)
+  const oh = d(dimensions, 'overallHeight', 28)
+  const depth = d(dimensions, 'depth', 28)
+  const w = d(dimensions, 'width', 19)
+
+  return (
+    <group ref={ref}>
+      <mesh position={[0, bh/2, depth * 0.1]}>
+        <boxGeometry args={[w, bh, depth * 0.7]} />
+        <meshStandardMaterial color="#F5F5F5" />
+      </mesh>
+      <mesh position={[0, bh + 0.02, depth * 0.1]}>
+        <boxGeometry args={[w * 0.95, 0.03, depth * 0.65]} />
+        <meshStandardMaterial color="#F0F0F0" />
+      </mesh>
+      <mesh position={[0, (oh + bh)/2, -depth * 0.3]}>
+        <boxGeometry args={[w * 0.85, oh - bh, depth * 0.25]} />
+        <meshStandardMaterial color="#F5F5F5" />
+      </mesh>
+      <mesh position={[0, oh, -depth * 0.3]}>
+        <boxGeometry args={[w * 0.8, 0.02, depth * 0.22]} />
+        <meshStandardMaterial color="#E8E8E8" />
+      </mesh>
+    </group>
+  )
+}
+
+function SinkModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  useFrame((state) => {
+    if (ref.current) ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15
+  })
+
+  const bw = d(dimensions, 'basinWidth', 20)
+  const bd = d(dimensions, 'basinDepth', 17)
+  const bh = d(dimensions, 'basinHeight', 6)
+  const mh = d(dimensions, 'mountHeight', 34)
+
+  return (
+    <group ref={ref}>
+      <mesh position={[0, mh, 0]}>
+        <boxGeometry args={[bw, bh, bd]} />
+        <meshStandardMaterial color="#F5F5F5" />
+      </mesh>
+      <mesh position={[0, mh + 0.01, 0]}>
+        <boxGeometry args={[bw * 0.85, bh * 0.8, bd * 0.85]} />
+        <meshStandardMaterial color="#E8E8E8" />
+      </mesh>
+      <mesh position={[0, mh + bh/2 + 0.08, -bd/2 + 0.02]}>
+        <cylinderGeometry args={[0.015, 0.012, 0.15, 12]} />
+        <meshStandardMaterial color="#C0C0C0" metalness={0.8} roughness={0.2} />
+      </mesh>
+      <mesh position={[0, mh + bh/2 + 0.16, -bd/2 + 0.04]}>
+        <boxGeometry args={[0.04, 0.02, 0.06]} />
+        <meshStandardMaterial color="#C0C0C0" metalness={0.8} roughness={0.2} />
+      </mesh>
+    </group>
+  )
+}
+
+function SprinklerModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  const dl = d(dimensions, 'dropLength', 4)
+
+  return (
+    <group ref={ref}>
+      <mesh position={[0, -dl/2, 0]}>
+        <cylinderGeometry args={[0.01, 0.01, dl, 8]} />
+        <meshStandardMaterial color="#CD853F" metalness={0.7} roughness={0.3} />
+      </mesh>
+      <mesh position={[0, -dl - 0.02, 0]}>
+        <sphereGeometry args={[0.025, 16, 16]} />
+        <meshStandardMaterial color="#CD853F" metalness={0.7} roughness={0.3} />
+      </mesh>
+      <mesh position={[0, -dl - 0.05, 0]}>
+        <cylinderGeometry args={[0.04, 0.03, 0.02, 16]} />
+        <meshStandardMaterial color="#CD853F" metalness={0.7} roughness={0.3} />
+      </mesh>
+    </group>
+  )
+}
+
+function GenericModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  useFrame((state) => {
+    if (ref.current) ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15
+  })
+
+  const firstDim = Object.values(dimensions)[0] || 24
+  const size = firstDim * S
+
+  return (
+    <group ref={ref}>
+      <mesh position={[0, size/2, 0]}>
+        <boxGeometry args={[size, size, size]} />
+        <meshStandardMaterial color="#808080" wireframe />
+      </mesh>
+    </group>
+  )
+}
+
 function ModelSwitch({ categoryId, dimensions }: { categoryId: string; dimensions: Record<string, number> }) {
   switch (categoryId) {
+    case 'single-door': return <SingleDoorModel dimensions={dimensions} />
+    case 'double-door': return <DoubleDoorModel dimensions={dimensions} />
+    case 'sliding-door': return <SingleDoorModel dimensions={dimensions} />
+    case 'casement-window':
+    case 'double-hung-window':
+    case 'fixed-window': return <WindowModel dimensions={dimensions} />
     case 'accent-chair': return <AccentChairModel dimensions={dimensions} />
-    case 'office-chair': return <ChairModel dimensions={dimensions} />
-    case 'sofa-lounge': return <SofaModel dimensions={dimensions} />
+    case 'office-chair': return <OfficeChairModel dimensions={dimensions} />
+    case 'sofa': return <SofaModel dimensions={dimensions} />
     case 'dining-table': return <TableModel dimensions={dimensions} />
     case 'office-desk': return <DeskModel dimensions={dimensions} />
     case 'storage-cabinet': return <CabinetModel dimensions={dimensions} />
-    case 'pendant-light': return <PendantModel dimensions={dimensions} />
-    default: return <ChairModel dimensions={dimensions} />
+    case 'steel-column': return <SteelColumnModel dimensions={dimensions} />
+    case 'concrete-column': return <ConcreteColumnModel dimensions={dimensions} />
+    case 'steel-beam': return <SteelBeamModel dimensions={dimensions} />
+    case 'pendant-light': return <PendantLightModel dimensions={dimensions} />
+    case 'recessed-light': return <RecessedLightModel dimensions={dimensions} />
+    case 'electrical-panel': return <ElectricalPanelModel dimensions={dimensions} />
+    case 'outlet': return <ElectricalPanelModel dimensions={dimensions} />
+    case 'air-terminal': return <AirTerminalModel dimensions={dimensions} />
+    case 'mechanical-equipment': return <GenericModel dimensions={dimensions} />
+    case 'toilet': return <ToiletModel dimensions={dimensions} />
+    case 'sink': return <SinkModel dimensions={dimensions} />
+    case 'sprinkler': return <SprinklerModel dimensions={dimensions} />
+    default: return <GenericModel dimensions={dimensions} />
   }
 }
 
 const cameraPositions: Record<string, [number, number, number]> = {
-  'accent-chair': [0.65, 0.5, 0.65],
-  'office-chair': [0.65, 0.5, 0.65],
-  'sofa-lounge': [1.6, 0.6, 1.6],
-  'dining-table': [1.4, 0.8, 1.4],
-  'office-desk': [1.4, 0.7, 1.4],
-  'storage-cabinet': [0.9, 0.7, 0.9],
-  'pendant-light': [0.7, 0.7, 0.7],
+  'single-door': [1.2, 1.0, 1.2],
+  'double-door': [1.5, 1.0, 1.5],
+  'sliding-door': [1.5, 1.0, 1.5],
+  'casement-window': [0.8, 0.8, 0.8],
+  'double-hung-window': [0.8, 0.9, 0.8],
+  'fixed-window': [0.8, 0.8, 0.8],
+  'accent-chair': [0.6, 0.5, 0.6],
+  'office-chair': [0.6, 0.5, 0.6],
+  'sofa': [1.4, 0.6, 1.4],
+  'dining-table': [1.2, 0.8, 1.2],
+  'office-desk': [1.2, 0.7, 1.2],
+  'storage-cabinet': [0.8, 0.9, 0.8],
+  'steel-column': [1.5, 1.5, 1.5],
+  'concrete-column': [1.2, 1.5, 1.2],
+  'steel-beam': [2.5, 0.6, 1.5],
+  'pendant-light': [0.6, 0.6, 0.6],
+  'recessed-light': [0.4, 0.3, 0.4],
+  'electrical-panel': [0.6, 0.5, 0.6],
+  'outlet': [0.3, 0.2, 0.3],
+  'air-terminal': [0.5, 0.3, 0.5],
+  'mechanical-equipment': [1.0, 0.8, 1.0],
+  'toilet': [0.5, 0.4, 0.5],
+  'sink': [0.5, 0.5, 0.5],
+  'sprinkler': [0.3, 0.2, 0.3],
 }
 
 const Preview3D = ({ category, dimensions }: Preview3DProps) => {

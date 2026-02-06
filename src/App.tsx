@@ -14,15 +14,15 @@ import Pricing from './sections/Pricing'
 import Stats from './sections/Stats'
 import CTABanner from './sections/CTABanner'
 import Footer from './sections/Footer'
-import type { FurnitureCategory } from './data/furniture-categories'
+import type { RevitFamilyCategory } from './data/revit-categories'
 
 function App() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [analysisComplete, setAnalysisComplete] = useState(false)
-  const [detectedCategory, setDetectedCategory] = useState<FurnitureCategory | null>(null)
+  const [detectedCategory, setDetectedCategory] = useState<RevitFamilyCategory | null>(null)
   const [dimensions, setDimensions] = useState<Record<string, number>>({})
 
-  const handleCategoryDetected = (category: FurnitureCategory) => {
+  const handleCategoryDetected = (category: RevitFamilyCategory) => {
     setDetectedCategory(category)
     const dims: Record<string, number> = {}
     category.dimensions.forEach(d => { dims[d.key] = d.default })
@@ -76,7 +76,7 @@ function App() {
               dimensions={dimensions}
               setDimensions={setDimensions}
             />
-            <ValidationExport />
+            <ValidationExport category={detectedCategory} />
           </>
         )}
         <Features />
