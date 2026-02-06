@@ -1,17 +1,24 @@
 import { useState, useRef, useCallback } from 'react'
-import { Upload, FileImage, FileText, X, Check, Loader2 } from 'lucide-react'
+import { Upload, FileImage, X, Check, Loader2, ChevronDown } from 'lucide-react'
+import { analyzeImage } from '../lib/image-analyzer'
+import { furnitureCategories, type FurnitureCategory } from '../data/furniture-categories'
 
 interface UploadSectionProps {
   onImageUpload: (url: string) => void
   onAnalysisComplete: () => void
+  onCategoryDetected: (category: FurnitureCategory) => void
 }
 
-const UploadSection = ({ onImageUpload, onAnalysisComplete }: UploadSectionProps) => {
+const UploadSection = ({ onImageUpload, onAnalysisComplete, onCategoryDetected }: UploadSectionProps) => {
   const [isDragging, setIsDragging] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisStep, setAnalysisStep] = useState(0)
+  const [detectedCategory, setDetectedCategory] = useState<FurnitureCategory | null>(null)
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false)
+  const [analysisSteps, setAnalysisSteps] = useState<string[]>([])
+  const [analysisComplete, setAnalysisComplete] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -27,132 +34,83 @@ const UploadSection = ({ onImageUpload, onAnalysisComplete }: UploadSectionProps
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    
-    const files = e.dataTransfer.files
-    if (files.length > 0) {
-      handleFile(files[0])
+    if (e.dataTransfer.files.length > 0) {
+      processFile(e.dataTransfer.files[0])
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleFile = (file: File) => {
-    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-      alert('Please upload an image or PDF file')
-      return
-    }
-    
-    if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB')
-      return
-    }
+  const processFile = (file: File) => {
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') return
+    if (file.size > 10 * 1024 * 1024) return
 
     setUploadedFile(file)
-    
-    // Simulate upload progress
     let progress = 0
     const interval = setInterval(() => {
-      progress += 10
+      progress += 12
+      if (progress > 100) progress = 100
       setUploadProgress(progress)
       if (progress >= 100) {
         clearInterval(interval)
         const url = URL.createObjectURL(file)
         onImageUpload(url)
-        startAnalysis()
+        startAnalysis(url)
       }
-    }, 100)
+    }, 80)
   }
 
-  const startAnalysis = () => {
+  const startAnalysis = async (imageUrl: string) => {
     setIsAnalyzing(true)
-    const steps = [
-      'Detecting furniture type...',
-      'Identifying components...',
-      'Extracting dimensions...',
-      'Matching templates...',
-      'Analysis complete!'
-    ]
-    
-    let step = 0
-    const interval = setInterval(() => {
-      setAnalysisStep(step)
-      step++
-      if (step >= steps.length) {
-        clearInterval(interval)
-        setIsAnalyzing(false)
-        onAnalysisComplete()
-      }
-    }, 800)
+    setAnalysisStep(0)
+    setAnalysisSteps(['Analyzing image content...'])
+
+    const category = await analyzeImage(imageUrl)
+    setDetectedCategory(category)
+    onCategoryDetected(category)
+
+    const steps = category.analysisSteps
+    setAnalysisSteps(steps)
+
+    for (let i = 0; i < steps.length; i++) {
+      setAnalysisStep(i)
+      await new Promise(r => setTimeout(r, 450))
+    }
+
+    setIsAnalyzing(false)
+    setAnalysisComplete(true)
+    onAnalysisComplete()
+  }
+
+  const handleCategoryChange = (cat: FurnitureCategory) => {
+    setDetectedCategory(cat)
+    onCategoryDetected(cat)
+    setShowCategoryPicker(false)
+    setAnalysisSteps(cat.analysisSteps)
   }
 
   const clearFile = () => {
     setUploadedFile(null)
     setUploadProgress(0)
     setAnalysisStep(0)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    setDetectedCategory(null)
+    setAnalysisSteps([])
+    setAnalysisComplete(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
-
-  const steps = [
-    {
-      icon: Upload,
-      title: 'Upload',
-      description: 'Drag & drop product images or catalog PDFs'
-    },
-    {
-      icon: FileImage,
-      title: 'Analyze',
-      description: 'AI detects components, dimensions, and geometry'
-    },
-    {
-      icon: FileText,
-      title: 'Configure',
-      description: 'Adjust parameters and export .rfa file'
-    }
-  ]
-
-  const analysisSteps = [
-    'Detecting furniture type...',
-    'Identifying components...',
-    'Extracting dimensions...',
-    'Matching templates...',
-    'Analysis complete!'
-  ]
 
   return (
     <section id="upload" className="py-24 bg-[#111]">
       <div className="max-w-[1280px] mx-auto px-5">
-        {/* Section Header */}
         <div className="text-center mb-16 scroll-animate">
           <h2 className="text-3xl md:text-4xl font-semibold mb-4">
-            From Image to Family in <span className="text-[#dc5f00]">3 Steps</span>
+            Upload Your <span className="text-[#dc5f00]">Furniture Image</span>
           </h2>
           <p className="text-[#a3a1a1] max-w-2xl mx-auto">
-            Our AI-powered pipeline transforms product images into parametric Revit families 
-            with proper BIM structure in minutes.
+            Our AI analyzes your image to detect the furniture type, identify components,
+            and extract dimensions automatically.
           </p>
         </div>
 
-        {/* Steps */}
-        <div className="grid md:grid-cols-3 gap-6 mb-16">
-          {steps.map((step, index) => (
-            <div
-              key={step.title}
-              className="scroll-animate card-hover p-8 rounded-lg text-center"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <div className="w-16 h-16 bg-[#dc5f00]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <step.icon className="text-[#dc5f00]" size={28} />
-              </div>
-              <div className="w-8 h-8 bg-[#dc5f00] rounded-full flex items-center justify-center mx-auto mb-4 text-sm font-semibold">
-                {index + 1}
-              </div>
-              <h3 className="text-xl font-medium mb-3">{step.title}</h3>
-              <p className="text-[#a3a1a1] text-sm">{step.description}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Upload Zone */}
         <div className="scroll-animate max-w-2xl mx-auto">
           {!uploadedFile ? (
             <div
@@ -160,38 +118,29 @@ const UploadSection = ({ onImageUpload, onAnalysisComplete }: UploadSectionProps
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`
-                relative border-2 border-dashed rounded-lg p-12 text-center cursor-pointer
-                transition-all duration-300
-                ${isDragging 
-                  ? 'border-[#dc5f00] bg-[#dc5f00]/5' 
+              className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all duration-300 ${
+                isDragging
+                  ? 'border-[#dc5f00] bg-[#dc5f00]/5'
                   : 'border-[#515151] hover:border-[#dc5f00]/50 hover:bg-[#1a1b1f]'
-                }
-              `}
+              }`}
             >
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*,.pdf"
-                onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+                onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])}
                 className="hidden"
               />
               <div className="w-20 h-20 bg-[#dc5f00]/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Upload className="text-[#dc5f00]" size={32} />
               </div>
-              <h3 className="text-xl font-medium mb-3">
-                Drop your chair image here
-              </h3>
-              <p className="text-[#a3a1a1] mb-2">
-                or click to browse
-              </p>
-              <p className="text-sm text-[#666]">
-                Supports: JPG, PNG, PDF (max 10MB)
-              </p>
+              <h3 className="text-xl font-medium mb-3">Drop your furniture image here</h3>
+              <p className="text-[#a3a1a1] mb-2">or click to browse</p>
+              <p className="text-sm text-[#666]">Supports: JPG, PNG, PDF (max 10MB)</p>
             </div>
           ) : (
             <div className="border border-[#515151] rounded-lg p-8 bg-[#1a1b1f]">
-              {!isAnalyzing && uploadProgress < 100 ? (
+              {uploadProgress < 100 ? (
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
@@ -200,60 +149,86 @@ const UploadSection = ({ onImageUpload, onAnalysisComplete }: UploadSectionProps
                       </div>
                       <div>
                         <p className="font-medium">{uploadedFile.name}</p>
-                        <p className="text-sm text-[#666]">
-                          {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
+                        <p className="text-sm text-[#666]">{(uploadedFile.size / 1024 / 1024).toFixed(2)} MB</p>
                       </div>
                     </div>
-                    <button
-                      onClick={clearFile}
-                      className="p-2 hover:bg-[#515151]/30 rounded-lg transition-colors"
-                    >
+                    <button onClick={clearFile} className="p-2 hover:bg-[#515151]/30 rounded-lg transition-colors">
                       <X size={20} className="text-[#666]" />
                     </button>
                   </div>
                   <div className="h-2 bg-[#515151]/30 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#dc5f00] transition-all duration-100"
-                      style={{ width: `${uploadProgress}%` }}
-                    />
+                    <div className="h-full bg-[#dc5f00] transition-all duration-100" style={{ width: `${uploadProgress}%` }} />
                   </div>
-                  <p className="text-sm text-[#a3a1a1] mt-2 text-center">
-                    Uploading... {uploadProgress}%
-                  </p>
+                  <p className="text-sm text-[#a3a1a1] mt-2 text-center">Uploading... {uploadProgress}%</p>
                 </>
               ) : (
-                <div className="text-center">
+                <div>
+                  {detectedCategory && (
+                    <div className="mb-6 p-4 bg-[#0a0a0a] border border-[#515151] rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] text-[#666] uppercase tracking-wider mb-1">Detected Category</p>
+                          <p className="font-medium text-[#dc5f00] text-lg">{detectedCategory.name}</p>
+                          <p className="text-xs text-[#a3a1a1] mt-1">{detectedCategory.description}</p>
+                        </div>
+                        <div className="relative">
+                          <button
+                            onClick={() => setShowCategoryPicker(!showCategoryPicker)}
+                            className="text-xs px-3 py-1.5 border border-[#515151] rounded-lg text-[#a3a1a1] hover:border-[#dc5f00] transition-colors flex items-center gap-1"
+                          >
+                            Change <ChevronDown size={12} />
+                          </button>
+                          {showCategoryPicker && (
+                            <div className="absolute right-0 top-full mt-2 w-60 bg-[#1a1b1f] border border-[#515151] rounded-lg shadow-xl z-10 overflow-hidden">
+                              {furnitureCategories.map(cat => (
+                                <button
+                                  key={cat.id}
+                                  onClick={() => handleCategoryChange(cat)}
+                                  className={`w-full text-left px-4 py-3 text-sm hover:bg-[#515151]/30 transition-colors flex items-center justify-between ${
+                                    cat.id === detectedCategory.id ? 'text-[#dc5f00]' : 'text-[#a3a1a1]'
+                                  }`}
+                                >
+                                  {cat.name}
+                                  {cat.id === detectedCategory.id && <Check size={14} />}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-center gap-3 mb-6">
-                    <Loader2 className="text-[#dc5f00] animate-spin" size={24} />
-                    <span className="text-lg font-medium">
-                      {analysisSteps[analysisStep]}
+                    {isAnalyzing && <Loader2 className="text-[#dc5f00] animate-spin" size={20} />}
+                    <span className={`text-sm font-medium ${isAnalyzing ? 'text-white' : analysisComplete ? 'text-green-500' : 'text-white'}`}>
+                      {isAnalyzing
+                        ? (analysisSteps[analysisStep] || 'Analyzing...')
+                        : analysisComplete
+                        ? 'Analysis Complete'
+                        : 'Analyzing...'}
                     </span>
                   </div>
-                  <div className="space-y-3">
+
+                  <div className="space-y-2">
                     {analysisSteps.map((step, index) => (
                       <div
-                        key={step}
+                        key={`${step}-${index}`}
                         className={`flex items-center gap-3 text-sm ${
-                          index <= analysisStep
-                            ? 'text-white'
-                            : 'text-[#666]'
+                          index <= analysisStep ? 'text-white' : 'text-[#666]'
                         }`}
                       >
-                        <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                            index < analysisStep
-                              ? 'bg-green-500'
-                              : index === analysisStep
-                              ? 'bg-[#dc5f00]'
-                              : 'bg-[#515151]'
-                          }`}
-                        >
-                          {index < analysisStep ? (
-                            <Check size={12} />
-                          ) : (
-                            <span className="text-xs">{index + 1}</span>
-                          )}
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          index < analysisStep || (analysisComplete && index === analysisStep)
+                            ? 'bg-green-500'
+                            : index === analysisStep
+                            ? 'bg-[#dc5f00]'
+                            : 'bg-[#515151]'
+                        }`}>
+                          {index < analysisStep || (analysisComplete && index === analysisStep)
+                            ? <Check size={12} />
+                            : <span className="text-[10px]">{index + 1}</span>
+                          }
                         </div>
                         <span>{step}</span>
                       </div>

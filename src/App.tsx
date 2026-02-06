@@ -14,24 +14,22 @@ import Pricing from './sections/Pricing'
 import Stats from './sections/Stats'
 import CTABanner from './sections/CTABanner'
 import Footer from './sections/Footer'
+import type { FurnitureCategory } from './data/furniture-categories'
 
 function App() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [analysisComplete, setAnalysisComplete] = useState(false)
-  const [parameters, setParameters] = useState({
-    manufacturer: '',
-    model: '',
-    cost: '',
-    seatHeight: 18,
-    overallHeight: 33,
-    overallWidth: 24,
-    depth: 24,
-    hasArms: true,
-    baseType: '5-Star'
-  })
+  const [detectedCategory, setDetectedCategory] = useState<FurnitureCategory | null>(null)
+  const [dimensions, setDimensions] = useState<Record<string, number>>({})
+
+  const handleCategoryDetected = (category: FurnitureCategory) => {
+    setDetectedCategory(category)
+    const dims: Record<string, number> = {}
+    category.dimensions.forEach(d => { dims[d.key] = d.default })
+    setDimensions(dims)
+  }
 
   useEffect(() => {
-    // Intersection Observer for scroll animations
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -44,28 +42,40 @@ function App() {
       { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
     )
 
-    document.querySelectorAll('.scroll-animate').forEach((el) => {
-      el.classList.add('opacity-0')
-      observer.observe(el)
-    })
+    const timer = setTimeout(() => {
+      document.querySelectorAll('.scroll-animate').forEach((el) => {
+        if (!el.classList.contains('animate-fade-in-up')) {
+          el.classList.add('opacity-0')
+          observer.observe(el)
+        }
+      })
+    }, 100)
 
-    return () => observer.disconnect()
-  }, [])
+    return () => {
+      clearTimeout(timer)
+      observer.disconnect()
+    }
+  }, [analysisComplete])
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation />
       <main>
         <Hero />
-        <UploadSection 
-          onImageUpload={setUploadedImage} 
+        <UploadSection
+          onImageUpload={setUploadedImage}
           onAnalysisComplete={() => setAnalysisComplete(true)}
+          onCategoryDetected={handleCategoryDetected}
         />
-        {analysisComplete && uploadedImage && (
+        {analysisComplete && uploadedImage && detectedCategory && (
           <>
-            <AnalysisPreview imageUrl={uploadedImage} />
-            <Preview3D parameters={parameters} />
-            <ParameterEditor parameters={parameters} setParameters={setParameters} />
+            <AnalysisPreview imageUrl={uploadedImage} category={detectedCategory} />
+            <Preview3D category={detectedCategory} dimensions={dimensions} />
+            <ParameterEditor
+              category={detectedCategory}
+              dimensions={dimensions}
+              setDimensions={setDimensions}
+            />
             <ValidationExport />
           </>
         )}
