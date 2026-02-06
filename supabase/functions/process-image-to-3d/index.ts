@@ -51,12 +51,18 @@ Deno.serve(async (req: Request) => {
 
     if (provider === "triposr") {
       result = await processWithTripoSR(imageUrl);
+    } else if (provider === "instantmesh") {
+      result = await processWithInstantMesh(imageUrl);
+    } else if (provider === "trellis2") {
+      result = await processWithTrellis2(imageUrl);
     } else if (provider === "meshy") {
       result = await processWithMeshy(imageUrl);
     } else if (provider === "tripo3d") {
       result = await processWithTripo3D(imageUrl);
+    } else if (provider === "wonder3d") {
+      result = await processWithWonder3D(imageUrl);
     } else {
-      result = await processWithTripoSR(imageUrl);
+      result = await processWithInstantMesh(imageUrl);
     }
 
     await supabase
@@ -230,6 +236,120 @@ async function processWithTripo3D(imageUrl: string) {
     provider: "tripo3d",
     status: "success",
     taskId: data.data.task_id,
+  };
+}
+
+async function processWithInstantMesh(imageUrl: string) {
+  const HF_API_KEY = Deno.env.get("HF_API_KEY");
+
+  if (!HF_API_KEY) {
+    return {
+      meshUrl: generateDemoMeshUrl(),
+      provider: "instantmesh",
+      status: "demo",
+      message: "Using demo mode. Add HF_API_KEY to enable real processing.",
+    };
+  }
+
+  const response = await fetch(
+    "https://api-inference.huggingface.co/models/TencentARC/InstantMesh",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${HF_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        inputs: imageUrl,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`InstantMesh API failed: ${response.statusText}`);
+  }
+
+  const meshData = await response.blob();
+
+  return {
+    meshUrl: URL.createObjectURL(meshData),
+    provider: "instantmesh",
+    status: "success",
+  };
+}
+
+async function processWithTrellis2(imageUrl: string) {
+  const REPLICATE_API_KEY = Deno.env.get("REPLICATE_API_KEY");
+
+  if (!REPLICATE_API_KEY) {
+    return {
+      meshUrl: generateDemoMeshUrl(),
+      provider: "trellis2",
+      status: "demo",
+      message: "Using demo mode. Add REPLICATE_API_KEY to enable TRELLIS-2.",
+    };
+  }
+
+  const response = await fetch("https://api.replicate.com/v1/predictions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${REPLICATE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      version: "trellis-2-model-version",
+      input: {
+        image: imageUrl,
+      },
+    }),
+  });
+
+  const data = await response.json();
+
+  return {
+    meshUrl: data.output || generateDemoMeshUrl(),
+    provider: "trellis2",
+    status: "success",
+    predictionId: data.id,
+  };
+}
+
+async function processWithWonder3D(imageUrl: string) {
+  const HF_API_KEY = Deno.env.get("HF_API_KEY");
+
+  if (!HF_API_KEY) {
+    return {
+      meshUrl: generateDemoMeshUrl(),
+      provider: "wonder3d",
+      status: "demo",
+      message: "Using demo mode. Add HF_API_KEY to enable real processing.",
+    };
+  }
+
+  const response = await fetch(
+    "https://api-inference.huggingface.co/models/flamehaze1115/Wonder3D-v1",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${HF_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        inputs: imageUrl,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Wonder3D API failed: ${response.statusText}`);
+  }
+
+  const meshData = await response.blob();
+
+  return {
+    meshUrl: URL.createObjectURL(meshData),
+    provider: "wonder3d",
+    status: "success",
   };
 }
 

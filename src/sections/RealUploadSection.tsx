@@ -16,6 +16,7 @@ export default function RealUploadSection({ onProjectCreated }: RealUploadSectio
   const [preview, setPreview] = useState<string | null>(null);
   const [projectName, setProjectName] = useState('');
   const [category, setCategory] = useState('chair');
+  const [provider, setProvider] = useState('instantmesh');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -84,7 +85,7 @@ export default function RealUploadSection({ onProjectCreated }: RealUploadSectio
           projectId: projectData.id,
           imageUrl: publicUrl,
           category: category,
-          provider: 'triposr',
+          provider: provider,
         }),
       });
 
@@ -155,6 +156,28 @@ export default function RealUploadSection({ onProjectCreated }: RealUploadSectio
                   <SelectItem value="bed">Bed</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="provider" className="text-white mb-2 block">
+                3D Reconstruction Model
+              </Label>
+              <Select value={provider} onValueChange={setProvider}>
+                <SelectTrigger className="bg-[#0a0a0a] border-gray-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="instantmesh">InstantMesh (Recommended - Fast & Quality)</SelectItem>
+                  <SelectItem value="trellis2">TRELLIS-2 (Latest - Microsoft)</SelectItem>
+                  <SelectItem value="triposr">TripoSR (Very Fast - Stability AI)</SelectItem>
+                  <SelectItem value="wonder3d">Wonder3D (Highest Detail - Slower)</SelectItem>
+                  <SelectItem value="meshy">Meshy.ai (Commercial)</SelectItem>
+                  <SelectItem value="tripo3d">Tripo3D (Commercial)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-gray-500 text-xs mt-1">
+                Free models work in demo mode without API keys
+              </p>
             </div>
 
             <div>
