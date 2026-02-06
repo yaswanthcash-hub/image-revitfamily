@@ -16,6 +16,51 @@ function d(dims: Record<string, number>, key: string, fallback: number) {
   return (dims[key] ?? fallback) * S
 }
 
+function AccentChairModel({ dimensions }: { dimensions: Record<string, number> }) {
+  const ref = useRef<THREE.Group>(null)
+  useFrame((state) => {
+    if (ref.current) ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15
+  })
+
+  const sh = d(dimensions, 'seatHeight', 17)
+  const sw = d(dimensions, 'seatWidth', 22)
+  const sd = d(dimensions, 'seatDepth', 21)
+  const bh = d(dimensions, 'backHeight', 20)
+  const ow = d(dimensions, 'overallWidth', 28)
+
+  return (
+    <group ref={ref}>
+      <mesh position={[0, sh, 0]}>
+        <boxGeometry args={[sw, 0.08, sd]} />
+        <meshStandardMaterial color="#5BA3C9" />
+      </mesh>
+      <mesh position={[0, sh + bh / 2, -sd / 2 + 0.04]}>
+        <boxGeometry args={[sw * 0.92, bh, 0.08]} />
+        <meshStandardMaterial color="#5BA3C9" />
+      </mesh>
+      <mesh position={[-ow / 2 + 0.03, sh + bh * 0.25, -sd * 0.15]}>
+        <boxGeometry args={[0.06, bh * 0.55, sd * 0.55]} />
+        <meshStandardMaterial color="#4A92B8" />
+      </mesh>
+      <mesh position={[ow / 2 - 0.03, sh + bh * 0.25, -sd * 0.15]}>
+        <boxGeometry args={[0.06, bh * 0.55, sd * 0.55]} />
+        <meshStandardMaterial color="#4A92B8" />
+      </mesh>
+      {[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([x, z], i) => {
+        const lx = (sw / 2 - 0.04) * x
+        const lz = (sd / 2 - 0.04) * z
+        const splay = 0.12
+        return (
+          <mesh key={i} position={[lx + x * splay, sh / 2 - 0.02, lz + z * splay]} rotation={[z * 0.08, 0, -x * 0.08]}>
+            <cylinderGeometry args={[0.014, 0.01, sh, 8]} />
+            <meshStandardMaterial color="#C8A064" />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
 function ChairModel({ dimensions }: { dimensions: Record<string, number> }) {
   const ref = useRef<THREE.Group>(null)
   useFrame((state) => {
@@ -254,6 +299,7 @@ function PendantModel({ dimensions }: { dimensions: Record<string, number> }) {
 
 function ModelSwitch({ categoryId, dimensions }: { categoryId: string; dimensions: Record<string, number> }) {
   switch (categoryId) {
+    case 'accent-chair': return <AccentChairModel dimensions={dimensions} />
     case 'office-chair': return <ChairModel dimensions={dimensions} />
     case 'sofa-lounge': return <SofaModel dimensions={dimensions} />
     case 'dining-table': return <TableModel dimensions={dimensions} />
@@ -265,6 +311,7 @@ function ModelSwitch({ categoryId, dimensions }: { categoryId: string; dimension
 }
 
 const cameraPositions: Record<string, [number, number, number]> = {
+  'accent-chair': [0.9, 0.6, 0.9],
   'office-chair': [0.8, 0.6, 0.8],
   'sofa-lounge': [2.0, 0.8, 2.0],
   'dining-table': [1.8, 1.0, 1.8],
