@@ -28,31 +28,57 @@ function AccentChairModel({ dimensions }: { dimensions: Record<string, number> }
   const bh = d(dimensions, 'backHeight', 20)
   const ow = d(dimensions, 'overallWidth', 28)
 
+  const cushionThick = 0.06
+  const backThick = 0.07
+  const wingDepth = sd * 0.6
+
   return (
     <group ref={ref}>
-      <mesh position={[0, sh, 0]}>
-        <boxGeometry args={[sw, 0.08, sd]} />
+      <mesh position={[0, sh, sd * 0.05]}>
+        <boxGeometry args={[sw, cushionThick, sd * 0.9]} />
         <meshStandardMaterial color="#5BA3C9" />
       </mesh>
-      <mesh position={[0, sh + bh / 2, -sd / 2 + 0.04]}>
-        <boxGeometry args={[sw * 0.92, bh, 0.08]} />
+      <mesh position={[0, sh + cushionThick / 2 + 0.01, sd * 0.08]}>
+        <boxGeometry args={[sw * 0.85, cushionThick * 0.6, sd * 0.75]} />
+        <meshStandardMaterial color="#6DB8D8" />
+      </mesh>
+      <mesh position={[0, sh + bh * 0.5, -sd / 2 + backThick / 2 + 0.02]}>
+        <boxGeometry args={[sw, bh, backThick]} />
         <meshStandardMaterial color="#5BA3C9" />
       </mesh>
-      <mesh position={[-ow / 2 + 0.03, sh + bh * 0.25, -sd * 0.15]}>
-        <boxGeometry args={[0.06, bh * 0.55, sd * 0.55]} />
+      <mesh position={[0, sh + bh * 0.55, -sd / 2 + backThick + 0.01]}>
+        <boxGeometry args={[sw * 0.82, bh * 0.75, 0.04]} />
+        <meshStandardMaterial color="#6DB8D8" />
+      </mesh>
+      <mesh position={[-ow / 2 + 0.025, sh + bh * 0.35, -sd / 2 + wingDepth / 2 + 0.02]}>
+        <boxGeometry args={[0.05, bh * 0.7, wingDepth]} />
         <meshStandardMaterial color="#4A92B8" />
       </mesh>
-      <mesh position={[ow / 2 - 0.03, sh + bh * 0.25, -sd * 0.15]}>
-        <boxGeometry args={[0.06, bh * 0.55, sd * 0.55]} />
+      <mesh position={[ow / 2 - 0.025, sh + bh * 0.35, -sd / 2 + wingDepth / 2 + 0.02]}>
+        <boxGeometry args={[0.05, bh * 0.7, wingDepth]} />
         <meshStandardMaterial color="#4A92B8" />
       </mesh>
-      {[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([x, z], i) => {
-        const lx = (sw / 2 - 0.04) * x
-        const lz = (sd / 2 - 0.04) * z
-        const splay = 0.12
+      <mesh position={[-ow / 2 + 0.04, sh + 0.03, sd * 0.05]}>
+        <boxGeometry args={[0.06, 0.06, sd * 0.55]} />
+        <meshStandardMaterial color="#4A92B8" />
+      </mesh>
+      <mesh position={[ow / 2 - 0.04, sh + 0.03, sd * 0.05]}>
+        <boxGeometry args={[0.06, 0.06, sd * 0.55]} />
+        <meshStandardMaterial color="#4A92B8" />
+      </mesh>
+      {[
+        { x: -1, z: 1, splayX: -0.06, splayZ: 0.04 },
+        { x: 1, z: 1, splayX: 0.06, splayZ: 0.04 },
+        { x: -1, z: -1, splayX: -0.04, splayZ: -0.03 },
+        { x: 1, z: -1, splayX: 0.04, splayZ: -0.03 },
+      ].map((leg, i) => {
+        const lx = (sw / 2 - 0.04) * leg.x + leg.splayX
+        const lz = (sd / 2 - 0.04) * leg.z + leg.splayZ
+        const rotX = leg.z > 0 ? -0.1 : 0.1
+        const rotZ = leg.x > 0 ? 0.1 : -0.1
         return (
-          <mesh key={i} position={[lx + x * splay, sh / 2 - 0.02, lz + z * splay]} rotation={[z * 0.08, 0, -x * 0.08]}>
-            <cylinderGeometry args={[0.014, 0.01, sh, 8]} />
+          <mesh key={i} position={[lx, sh / 2, lz]} rotation={[rotX, 0, rotZ]}>
+            <cylinderGeometry args={[0.016, 0.01, sh, 8]} />
             <meshStandardMaterial color="#C8A064" />
           </mesh>
         )
@@ -131,31 +157,48 @@ function SofaModel({ dimensions }: { dimensions: Record<string, number> }) {
   const armH = d(dimensions, 'armHeight', 26)
   const seatD = d(dimensions, 'seatDepth', 22)
 
+  const backH = oh - sh
+  const innerW = ow * 0.82
+  const armW = ow * 0.08
+  const cushionT = 0.06
+
   return (
     <group ref={ref}>
-      <mesh position={[0, sh * 0.85, 0.02]}>
-        <boxGeometry args={[ow * 0.82, sh * 0.35, seatD]} />
+      <mesh position={[0, sh * 0.45, 0]}>
+        <boxGeometry args={[ow, sh * 0.9, od]} />
         <meshStandardMaterial color="#C4A77D" />
       </mesh>
-      <mesh position={[0, sh + (oh - sh) * 0.35, -od * 0.35]}>
-        <boxGeometry args={[ow * 0.82, (oh - sh) * 0.65, od * 0.18]} />
+      <mesh position={[0, sh + cushionT / 2, od * 0.08]}>
+        <boxGeometry args={[innerW, cushionT, seatD]} />
+        <meshStandardMaterial color="#D4B78D" />
+      </mesh>
+      {[-1, 0, 1].map(i => (
+        <mesh key={`sc${i}`} position={[i * (innerW / 3), sh + cushionT + 0.01, od * 0.08]}>
+          <boxGeometry args={[innerW / 3 - 0.01, 0.02, seatD * 0.9]} />
+          <meshStandardMaterial color="#DBBF97" />
+        </mesh>
+      ))}
+      <mesh position={[0, sh + backH * 0.45, -od / 2 + 0.04]}>
+        <boxGeometry args={[innerW, backH * 0.85, 0.08]} />
         <meshStandardMaterial color="#C4A77D" />
       </mesh>
-      <mesh position={[-ow / 2 + ow * 0.04, armH * 0.5, 0]}>
-        <boxGeometry args={[ow * 0.07, armH, od * 0.82]} />
+      {[-1, 0, 1].map(i => (
+        <mesh key={`bc${i}`} position={[i * (innerW / 3), sh + backH * 0.45, -od / 2 + 0.09]}>
+          <boxGeometry args={[innerW / 3 - 0.01, backH * 0.65, 0.04]} />
+          <meshStandardMaterial color="#D4B78D" />
+        </mesh>
+      ))}
+      <mesh position={[-ow / 2 + armW / 2, armH * 0.5, 0]}>
+        <boxGeometry args={[armW, armH, od * 0.9]} />
         <meshStandardMaterial color="#B89A6A" />
       </mesh>
-      <mesh position={[ow / 2 - ow * 0.04, armH * 0.5, 0]}>
-        <boxGeometry args={[ow * 0.07, armH, od * 0.82]} />
+      <mesh position={[ow / 2 - armW / 2, armH * 0.5, 0]}>
+        <boxGeometry args={[armW, armH, od * 0.9]} />
         <meshStandardMaterial color="#B89A6A" />
-      </mesh>
-      <mesh position={[0, oh * 0.35, -od / 2 + 0.01]}>
-        <boxGeometry args={[ow, oh * 0.7, od * 0.04]} />
-        <meshStandardMaterial color="#A88B5C" />
       </mesh>
       {[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([x, z], i) => (
-        <mesh key={i} position={[(ow / 2 - 0.06) * x, 0.04, (od / 2 - 0.06) * z]}>
-          <cylinderGeometry args={[0.018, 0.014, 0.08, 8]} />
+        <mesh key={i} position={[(ow / 2 - 0.06) * x, 0.025, (od / 2 - 0.06) * z]}>
+          <cylinderGeometry args={[0.02, 0.015, 0.05, 8]} />
           <meshStandardMaterial color="#5C4830" />
         </mesh>
       ))}
@@ -311,13 +354,13 @@ function ModelSwitch({ categoryId, dimensions }: { categoryId: string; dimension
 }
 
 const cameraPositions: Record<string, [number, number, number]> = {
-  'accent-chair': [0.9, 0.6, 0.9],
-  'office-chair': [0.8, 0.6, 0.8],
-  'sofa-lounge': [2.0, 0.8, 2.0],
-  'dining-table': [1.8, 1.0, 1.8],
-  'office-desk': [1.8, 0.8, 1.8],
-  'storage-cabinet': [1.2, 0.8, 1.2],
-  'pendant-light': [0.8, 0.8, 0.8],
+  'accent-chair': [0.65, 0.5, 0.65],
+  'office-chair': [0.65, 0.5, 0.65],
+  'sofa-lounge': [1.6, 0.6, 1.6],
+  'dining-table': [1.4, 0.8, 1.4],
+  'office-desk': [1.4, 0.7, 1.4],
+  'storage-cabinet': [0.9, 0.7, 0.9],
+  'pendant-light': [0.7, 0.7, 0.7],
 }
 
 const Preview3D = ({ category, dimensions }: Preview3DProps) => {
