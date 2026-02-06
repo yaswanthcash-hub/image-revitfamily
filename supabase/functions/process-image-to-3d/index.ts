@@ -4,7 +4,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
 interface ProcessRequest {
@@ -13,6 +14,15 @@ interface ProcessRequest {
   category: string;
   provider?: string;
 }
+
+const REPLICATE_MODELS: Record<string, string> = {
+  triposr: "camenduru/triposr:aec44c48ff8a7e7f8b53e9e3d406bd8c8a3e5cf3",
+  instantmesh: "camenduru/instantmesh:3fef3d8200cc3eb3d5b9b0df66d2650ebf55c0d8",
+  trellis: "firtoz/trellis:64483e9ea83b28c9b8303a22c8b08d14e44f09a0",
+  wonder3d: "camenduru/wonder3d:cb2f20a73af9fed47632e9ee7edb9f1b58eb5abb",
+  zero123plus:
+    "camenduru/zero123plusplus:6af03d3f0d74e8d4ed02c3b6a04207be4ebcffe4",
+};
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -27,11 +37,16 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { projectId, imageUrl, category, provider = "triposr" }: ProcessRequest = await req.json();
+    const {
+      projectId,
+      imageUrl,
+      category,
+      provider = "instantmesh",
+    }: ProcessRequest = await req.json();
 
     await supabase
       .from("projects")
-      .update({ status: "processing" })
+      .update({ status: "processing", processing_provider: provider })
       .eq("id", projectId);
 
     const jobRecord = await supabase
@@ -49,20 +64,28 @@ Deno.serve(async (req: Request) => {
 
     let result;
 
-    if (provider === "triposr") {
-      result = await processWithTripoSR(imageUrl);
-    } else if (provider === "instantmesh") {
-      result = await processWithInstantMesh(imageUrl);
-    } else if (provider === "trellis2") {
-      result = await processWithTrellis2(imageUrl);
-    } else if (provider === "meshy") {
-      result = await processWithMeshy(imageUrl);
-    } else if (provider === "tripo3d") {
-      result = await processWithTripo3D(imageUrl);
-    } else if (provider === "wonder3d") {
-      result = await processWithWonder3D(imageUrl);
-    } else {
-      result = await processWithInstantMesh(imageUrl);
+    switch (provider) {
+      case "triposr":
+        result = await processWithReplicate(imageUrl, "triposr");
+        break;
+      case "instantmesh":
+        result = await processWithReplicate(imageUrl, "instantmesh");
+        break;
+      case "trellis2":
+      case "trellis":
+        result = await processWithReplicate(imageUrl, "trellis");
+        break;
+      case "wonder3d":
+        result = await processWithReplicate(imageUrl, "wonder3d");
+        break;
+      case "meshy":
+        result = await processWithMeshy(imageUrl);
+        break;
+      case "tripo3d":
+        result = await processWithTripo3D(imageUrl);
+        break;
+      default:
+        result = await processWithReplicate(imageUrl, "instantmesh");
     }
 
     await supabase
@@ -77,7 +100,7 @@ Deno.serve(async (req: Request) => {
     await supabase
       .from("projects")
       .update({
-        status: "completed",
+        status: "mesh_ready",
         mesh_url: result.meshUrl,
         processing_data: result,
       })
@@ -88,6 +111,7 @@ Deno.serve(async (req: Request) => {
         success: true,
         projectId,
         meshUrl: result.meshUrl,
+        provider: result.provider,
       }),
       {
         headers: {
@@ -98,6 +122,20 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("Processing error:", error);
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    try {
+      const body = await req.clone().json();
+      if (body.projectId) {
+        await supabase
+          .from("projects")
+          .update({ status: "failed", error_message: error.message })
+          .eq("id", body.projectId);
+      }
+    } catch {}
 
     return new Response(
       JSON.stringify({
@@ -115,54 +153,81 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-async function processWithTripoSR(imageUrl: string) {
-  const HF_API_KEY = Deno.env.get("HF_API_KEY");
+async function processWithReplicate(
+  imageUrl: string,
+  model: string
+): Promise<{ meshUrl: string; provider: string; status: string }> {
+  const REPLICATE_API_KEY = Deno.env.get("REPLICATE_API_KEY");
 
-  if (!HF_API_KEY) {
+  if (!REPLICATE_API_KEY) {
     return {
-      meshUrl: generateDemoMeshUrl(),
-      provider: "triposr",
+      meshUrl: getDemoMeshUrl(model),
+      provider: model,
       status: "demo",
-      message: "Using demo mode. Add HF_API_KEY to enable real processing.",
     };
   }
 
-  const response = await fetch(
-    "https://api-inference.huggingface.co/models/stabilityai/TripoSR",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${HF_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        inputs: imageUrl,
-      }),
-    }
-  );
+  const modelVersion = REPLICATE_MODELS[model];
 
-  if (!response.ok) {
-    throw new Error(`TripoSR API failed: ${response.statusText}`);
+  if (!modelVersion) {
+    return {
+      meshUrl: getDemoMeshUrl(model),
+      provider: model,
+      status: "demo",
+    };
   }
 
-  const meshData = await response.blob();
+  const response = await fetch("https://api.replicate.com/v1/predictions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${REPLICATE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      version: modelVersion.split(":")[1],
+      input: {
+        image: imageUrl,
+        output_format: "glb",
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Replicate API error: ${errorText}`);
+  }
+
+  const prediction = await response.json();
+
+  const result = await pollForResult(prediction.urls.get, REPLICATE_API_KEY);
+
+  let meshUrl = result.output;
+
+  if (Array.isArray(meshUrl)) {
+    meshUrl = meshUrl.find(
+      (url: string) =>
+        url.endsWith(".glb") || url.endsWith(".obj") || url.endsWith(".gltf")
+    );
+    if (!meshUrl) meshUrl = meshUrl[0];
+  }
 
   return {
-    meshUrl: URL.createObjectURL(meshData),
-    provider: "triposr",
+    meshUrl: meshUrl || getDemoMeshUrl(model),
+    provider: model,
     status: "success",
   };
 }
 
-async function processWithMeshy(imageUrl: string) {
+async function processWithMeshy(
+  imageUrl: string
+): Promise<{ meshUrl: string; provider: string; status: string }> {
   const MESHY_API_KEY = Deno.env.get("MESHY_API_KEY");
 
   if (!MESHY_API_KEY) {
     return {
-      meshUrl: generateDemoMeshUrl(),
+      meshUrl: getDemoMeshUrl("meshy"),
       provider: "meshy",
       status: "demo",
-      message: "Using demo mode. Add MESHY_API_KEY to enable real processing.",
     };
   }
 
@@ -178,39 +243,59 @@ async function processWithMeshy(imageUrl: string) {
     }),
   });
 
+  if (!createResponse.ok) {
+    throw new Error(`Meshy API error: ${await createResponse.text()}`);
+  }
+
   const createData = await createResponse.json();
   const taskId = createData.result;
 
-  await new Promise(resolve => setTimeout(resolve, 60000));
-
-  const resultResponse = await fetch(
-    `https://api.meshy.ai/v2/image-to-3d/${taskId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${MESHY_API_KEY}`,
-      },
-    }
-  );
-
-  const resultData = await resultResponse.json();
+  const meshUrl = await pollMeshyTask(taskId, MESHY_API_KEY);
 
   return {
-    meshUrl: resultData.model_urls.glb,
+    meshUrl,
     provider: "meshy",
     status: "success",
-    taskId,
   };
 }
 
-async function processWithTripo3D(imageUrl: string) {
+async function pollMeshyTask(taskId: string, apiKey: string): Promise<string> {
+  for (let i = 0; i < 120; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    const response = await fetch(
+      `https://api.meshy.ai/v2/image-to-3d/${taskId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.status === "SUCCEEDED") {
+      return data.model_urls?.glb || data.model_urls?.obj;
+    }
+
+    if (data.status === "FAILED") {
+      throw new Error("Meshy processing failed");
+    }
+  }
+
+  throw new Error("Meshy processing timeout");
+}
+
+async function processWithTripo3D(
+  imageUrl: string
+): Promise<{ meshUrl: string; provider: string; status: string }> {
   const TRIPO3D_API_KEY = Deno.env.get("TRIPO3D_API_KEY");
 
   if (!TRIPO3D_API_KEY) {
     return {
-      meshUrl: generateDemoMeshUrl(),
+      meshUrl: getDemoMeshUrl("tripo3d"),
       provider: "tripo3d",
       status: "demo",
-      message: "Using demo mode. Add TRIPO3D_API_KEY to enable real processing.",
     };
   }
 
@@ -229,130 +314,88 @@ async function processWithTripo3D(imageUrl: string) {
     }),
   });
 
+  if (!response.ok) {
+    throw new Error(`Tripo3D API error: ${await response.text()}`);
+  }
+
   const data = await response.json();
+  const taskId = data.data?.task_id;
+
+  if (!taskId) {
+    throw new Error("No task ID returned from Tripo3D");
+  }
+
+  const meshUrl = await pollTripo3DTask(taskId, TRIPO3D_API_KEY);
 
   return {
-    meshUrl: data.data.model.url,
+    meshUrl,
     provider: "tripo3d",
     status: "success",
-    taskId: data.data.task_id,
   };
 }
 
-async function processWithInstantMesh(imageUrl: string) {
-  const HF_API_KEY = Deno.env.get("HF_API_KEY");
+async function pollTripo3DTask(taskId: string, apiKey: string): Promise<string> {
+  for (let i = 0; i < 120; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 5000));
 
-  if (!HF_API_KEY) {
-    return {
-      meshUrl: generateDemoMeshUrl(),
-      provider: "instantmesh",
-      status: "demo",
-      message: "Using demo mode. Add HF_API_KEY to enable real processing.",
-    };
-  }
+    const response = await fetch(
+      `https://api.tripo3d.ai/v2/openapi/task/${taskId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      }
+    );
 
-  const response = await fetch(
-    "https://api-inference.huggingface.co/models/TencentARC/InstantMesh",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${HF_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        inputs: imageUrl,
-      }),
+    const data = await response.json();
+
+    if (data.data?.status === "success") {
+      return data.data?.output?.model;
     }
-  );
 
-  if (!response.ok) {
-    throw new Error(`InstantMesh API failed: ${response.statusText}`);
-  }
-
-  const meshData = await response.blob();
-
-  return {
-    meshUrl: URL.createObjectURL(meshData),
-    provider: "instantmesh",
-    status: "success",
-  };
-}
-
-async function processWithTrellis2(imageUrl: string) {
-  const REPLICATE_API_KEY = Deno.env.get("REPLICATE_API_KEY");
-
-  if (!REPLICATE_API_KEY) {
-    return {
-      meshUrl: generateDemoMeshUrl(),
-      provider: "trellis2",
-      status: "demo",
-      message: "Using demo mode. Add REPLICATE_API_KEY to enable TRELLIS-2.",
-    };
-  }
-
-  const response = await fetch("https://api.replicate.com/v1/predictions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${REPLICATE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      version: "trellis-2-model-version",
-      input: {
-        image: imageUrl,
-      },
-    }),
-  });
-
-  const data = await response.json();
-
-  return {
-    meshUrl: data.output || generateDemoMeshUrl(),
-    provider: "trellis2",
-    status: "success",
-    predictionId: data.id,
-  };
-}
-
-async function processWithWonder3D(imageUrl: string) {
-  const HF_API_KEY = Deno.env.get("HF_API_KEY");
-
-  if (!HF_API_KEY) {
-    return {
-      meshUrl: generateDemoMeshUrl(),
-      provider: "wonder3d",
-      status: "demo",
-      message: "Using demo mode. Add HF_API_KEY to enable real processing.",
-    };
-  }
-
-  const response = await fetch(
-    "https://api-inference.huggingface.co/models/flamehaze1115/Wonder3D-v1",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${HF_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        inputs: imageUrl,
-      }),
+    if (data.data?.status === "failed") {
+      throw new Error("Tripo3D processing failed");
     }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Wonder3D API failed: ${response.statusText}`);
   }
 
-  const meshData = await response.blob();
-
-  return {
-    meshUrl: URL.createObjectURL(meshData),
-    provider: "wonder3d",
-    status: "success",
-  };
+  throw new Error("Tripo3D processing timeout");
 }
 
-function generateDemoMeshUrl(): string {
-  return "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Chair/glTF/Chair.gltf";
+async function pollForResult(
+  url: string,
+  apiKey: string,
+  maxAttempts = 120
+): Promise<any> {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+
+    const result = await response.json();
+
+    if (result.status === "succeeded") {
+      return result;
+    }
+
+    if (result.status === "failed") {
+      throw new Error(result.error || "Processing failed");
+    }
+  }
+
+  throw new Error("Processing timeout");
+}
+
+function getDemoMeshUrl(provider: string): string {
+  const demoModels: Record<string, string> = {
+    chair:
+      "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Chair/glTF-Binary/Chair.glb",
+    default:
+      "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Box/glTF-Binary/Box.glb",
+  };
+
+  return demoModels.chair;
 }

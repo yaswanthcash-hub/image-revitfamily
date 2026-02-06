@@ -241,7 +241,7 @@ export default function RealUploadSection({ onProjectCreated }: RealUploadSectio
             <Button
               onClick={handleUpload}
               disabled={!file || uploading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
               size="lg"
             >
               {uploading ? (

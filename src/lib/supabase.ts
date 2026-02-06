@@ -14,9 +14,9 @@ export interface Project {
   user_id?: string;
   name: string;
   image_url: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'pending' | 'processing' | 'mesh_ready' | 'completed' | 'failed';
   furniture_category: string;
-  dimensions: {
+  dimensions?: {
     height?: number;
     width?: number;
     depth?: number;
@@ -24,7 +24,17 @@ export interface Project {
   };
   mesh_url?: string;
   revit_family_url?: string;
-  processing_data: Record<string, any>;
+  processing_data?: Record<string, any>;
+  processing_provider?: string;
+  processed_image_url?: string;
+  estimated_dimensions?: {
+    height: number;
+    width: number;
+    depth: number;
+    confidence?: number;
+  };
+  error_message?: string;
+  processing_progress?: number;
   created_at: string;
   updated_at: string;
 }
