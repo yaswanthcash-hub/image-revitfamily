@@ -2,11 +2,8 @@ import { useEffect, useState } from 'react'
 import './App.css'
 import Navigation from './sections/Navigation'
 import Hero from './sections/Hero'
-import UploadSection from './sections/UploadSection'
-import AnalysisPreview from './sections/AnalysisPreview'
-import Preview3D from './sections/Preview3D'
-import ParameterEditor from './sections/ParameterEditor'
-import ValidationExport from './sections/ValidationExport'
+import RealUploadSection from './sections/RealUploadSection'
+import ProjectDashboard from './sections/ProjectDashboard'
 import Features from './sections/Features'
 import Technology from './sections/Technology'
 import HowItWorks from './sections/HowItWorks'
@@ -14,19 +11,35 @@ import Pricing from './sections/Pricing'
 import Stats from './sections/Stats'
 import CTABanner from './sections/CTABanner'
 import Footer from './sections/Footer'
-import type { RevitFamilyCategory } from './data/revit-categories'
+import { supabase, type Project } from './lib/supabase'
 
 function App() {
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
-  const [analysisComplete, setAnalysisComplete] = useState(false)
-  const [detectedCategory, setDetectedCategory] = useState<RevitFamilyCategory | null>(null)
-  const [dimensions, setDimensions] = useState<Record<string, number>>({})
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const handleCategoryDetected = (category: RevitFamilyCategory) => {
-    setDetectedCategory(category)
-    const dims: Record<string, number> = {}
-    category.dimensions.forEach(d => { dims[d.key] = d.default })
-    setDimensions(dims)
+  useEffect(() => {
+    loadProjects()
+  }, [])
+
+  const loadProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      setProjects(data || [])
+    } catch (error) {
+      console.error('Error loading projects:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleProjectCreated = (newProject: Project) => {
+    setProjects([newProject, ...projects])
   }
 
   useEffect(() => {
@@ -55,29 +68,16 @@ function App() {
       clearTimeout(timer)
       observer.disconnect()
     }
-  }, [analysisComplete])
+  }, [projects])
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation />
       <main>
         <Hero />
-        <UploadSection
-          onImageUpload={setUploadedImage}
-          onAnalysisComplete={() => setAnalysisComplete(true)}
-          onCategoryDetected={handleCategoryDetected}
-        />
-        {analysisComplete && uploadedImage && detectedCategory && (
-          <>
-            <AnalysisPreview imageUrl={uploadedImage} category={detectedCategory} />
-            <Preview3D category={detectedCategory} dimensions={dimensions} />
-            <ParameterEditor
-              category={detectedCategory}
-              dimensions={dimensions}
-              setDimensions={setDimensions}
-            />
-            <ValidationExport category={detectedCategory} />
-          </>
+        <RealUploadSection onProjectCreated={handleProjectCreated} />
+        {!loading && (
+          <ProjectDashboard projects={projects} onProjectsUpdate={setProjects} />
         )}
         <Features />
         <Technology />
