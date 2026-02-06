@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import './App.css'
 import Navigation from './sections/Navigation'
 import Hero from './sections/Hero'
+import DemoBanner from './sections/DemoBanner'
+import SampleImages from './sections/SampleImages'
 import RealUploadSection from './sections/RealUploadSection'
 import ProjectDashboard from './sections/ProjectDashboard'
 import Features from './sections/Features'
@@ -11,11 +13,13 @@ import Pricing from './sections/Pricing'
 import Stats from './sections/Stats'
 import CTABanner from './sections/CTABanner'
 import Footer from './sections/Footer'
+import APISetup from './sections/APISetup'
 import { supabase, type Project } from './lib/supabase'
 
 function App() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const uploadRef = useRef<{ setFromSample: (url: string, name: string, category: string) => void }>(null)
 
   useEffect(() => {
     loadProjects()
@@ -40,6 +44,13 @@ function App() {
 
   const handleProjectCreated = (newProject: Project) => {
     setProjects([newProject, ...projects])
+  }
+
+  const handleSampleSelect = (imageUrl: string, name: string, category: string) => {
+    if (uploadRef.current?.setFromSample) {
+      uploadRef.current.setFromSample(imageUrl, name, category)
+    }
+    document.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' })
   }
 
   useEffect(() => {
@@ -72,13 +83,21 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
+      <DemoBanner />
       <Navigation />
       <main>
         <Hero />
-        <RealUploadSection onProjectCreated={handleProjectCreated} />
+        <SampleImages onSelectSample={handleSampleSelect} />
+        <div id="upload">
+          <RealUploadSection
+            ref={uploadRef}
+            onProjectCreated={handleProjectCreated}
+          />
+        </div>
         {!loading && (
           <ProjectDashboard projects={projects} onProjectsUpdate={setProjects} />
         )}
+        <APISetup />
         <Features />
         <Technology />
         <HowItWorks />

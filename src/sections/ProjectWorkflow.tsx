@@ -103,6 +103,38 @@ export default function ProjectWorkflow({
     };
   }, [project.id, onUpdate]);
 
+  const handleRetryProcessing = async () => {
+    try {
+      await supabase
+        .from("projects")
+        .update({ status: "pending", error_message: null })
+        .eq("id", project.id);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-image-to-3d`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            projectId: project.id,
+            imageUrl: project.image_url,
+            category: project.furniture_category,
+            provider: project.processing_provider || "instantmesh",
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to retry processing");
+      }
+    } catch (error) {
+      console.error("Retry failed:", error);
+    }
+  };
+
   const handleEstimateDimensions = async () => {
     try {
       const response = await fetch(
@@ -246,14 +278,25 @@ export default function ProjectWorkflow({
 
         {project.status === "failed" && (
           <Card className="p-6 bg-red-500/10 border-red-500/50 mb-6">
-            <div className="flex items-center gap-3">
-              <XCircle className="w-6 h-6 text-red-500" />
-              <div>
-                <p className="text-red-400 font-medium">Processing Failed</p>
-                <p className="text-red-400/70 text-sm">
-                  {project.error_message || "An error occurred during processing"}
-                </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <XCircle className="w-6 h-6 text-red-500" />
+                <div>
+                  <p className="text-red-400 font-medium">Processing Failed</p>
+                  <p className="text-red-400/70 text-sm">
+                    {project.error_message || "An error occurred during processing"}
+                  </p>
+                </div>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRetryProcessing}
+                className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Retry
+              </Button>
             </div>
           </Card>
         )}
