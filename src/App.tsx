@@ -1,8 +1,7 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 import Navigation from './sections/Navigation'
 import Hero from './sections/Hero'
-import CategorySelector from './sections/CategorySelector'
 import UploadSection from './sections/UploadSection'
 import AnalysisPreview from './sections/AnalysisPreview'
 import Preview3D from './sections/Preview3D'
@@ -15,38 +14,24 @@ import Pricing from './sections/Pricing'
 import Stats from './sections/Stats'
 import CTABanner from './sections/CTABanner'
 import Footer from './sections/Footer'
-import type { FurnitureCategory } from './data/furniture-categories'
 
 function App() {
-  const [selectedCategory, setSelectedCategory] = useState<FurnitureCategory | null>(null)
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [analysisComplete, setAnalysisComplete] = useState(false)
-  const [dimensions, setDimensions] = useState<Record<string, number>>({})
-  const [materials, setMaterials] = useState<Record<string, string>>({})
-  const [identityData, setIdentityData] = useState<Record<string, string>>({})
-
-  const initCategoryDefaults = useCallback((cat: FurnitureCategory) => {
-    const dims: Record<string, number> = {}
-    cat.dimensions.forEach(d => { dims[d.key] = d.default })
-    setDimensions(dims)
-
-    const mats: Record<string, string> = {}
-    cat.materials.forEach(m => { mats[m.key] = m.default })
-    setMaterials(mats)
-
-    setIdentityData({})
-    setUploadedImage(null)
-    setAnalysisComplete(false)
-  }, [])
-
-  const handleSelectCategory = useCallback((cat: FurnitureCategory) => {
-    setSelectedCategory(cat)
-    initCategoryDefaults(cat)
-  }, [initCategoryDefaults])
-
-  const observerDeps = useMemo(() => [selectedCategory, analysisComplete], [selectedCategory, analysisComplete])
+  const [parameters, setParameters] = useState({
+    manufacturer: '',
+    model: '',
+    cost: '',
+    seatHeight: 18,
+    overallHeight: 33,
+    overallWidth: 24,
+    depth: 24,
+    hasArms: true,
+    baseType: '5-Star'
+  })
 
   useEffect(() => {
+    // Intersection Observer for scroll animations
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -59,55 +44,29 @@ function App() {
       { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
     )
 
-    const timer = setTimeout(() => {
-      document.querySelectorAll('.scroll-animate').forEach((el) => {
-        if (!el.classList.contains('animate-fade-in-up')) {
-          el.classList.add('opacity-0')
-          observer.observe(el)
-        }
-      })
-    }, 100)
+    document.querySelectorAll('.scroll-animate').forEach((el) => {
+      el.classList.add('opacity-0')
+      observer.observe(el)
+    })
 
-    return () => {
-      clearTimeout(timer)
-      observer.disconnect()
-    }
-  }, [observerDeps])
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation />
       <main>
         <Hero />
-        <CategorySelector
-          selectedCategory={selectedCategory}
-          onSelectCategory={handleSelectCategory}
+        <UploadSection 
+          onImageUpload={setUploadedImage} 
+          onAnalysisComplete={() => setAnalysisComplete(true)}
         />
-        {selectedCategory && (
-          <UploadSection
-            category={selectedCategory}
-            onImageUpload={setUploadedImage}
-            onAnalysisComplete={() => setAnalysisComplete(true)}
-          />
-        )}
-        {selectedCategory && analysisComplete && uploadedImage && (
+        {analysisComplete && uploadedImage && (
           <>
-            <AnalysisPreview imageUrl={uploadedImage} category={selectedCategory} />
-            <Preview3D
-              dimensions={dimensions}
-              categoryId={selectedCategory.id}
-              materials={materials}
-            />
-            <ParameterEditor
-              category={selectedCategory}
-              dimensions={dimensions}
-              setDimensions={setDimensions}
-              materials={materials}
-              setMaterials={setMaterials}
-              identityData={identityData}
-              setIdentityData={setIdentityData}
-            />
-            <ValidationExport category={selectedCategory} />
+            <AnalysisPreview imageUrl={uploadedImage} />
+            <Preview3D parameters={parameters} />
+            <ParameterEditor parameters={parameters} setParameters={setParameters} />
+            <ValidationExport />
           </>
         )}
         <Features />
