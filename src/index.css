@@ -1,0 +1,181 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 27 100% 43%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 9% 11%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 64%;
+    --accent: 27 100% 43%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 32%;
+    --input: 0 0% 32%;
+    --ring: 27 100% 43%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-[#0a0a0a] text-white antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2e2e2e;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #515151;
+}
+
+/* Grid pattern background */
+.grid-pattern {
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #ffffff 0%, #dc5f00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animation utilities */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: #515151;
+  }
+  50% {
+    border-color: #dc5f00;
+  }
+}
+
+@keyframes scan {
+  0% {
+    top: 0;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.animate-pulse-border {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+.animate-scan {
+  animation: scan 2s linear infinite;
+}
+
+/* Stagger delays */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+
+/* Button hover effects */
+.btn-primary {
+  @apply bg-[#dc5f00] text-white border border-[#dc5f00] px-8 py-4 text-sm uppercase tracking-wider font-medium transition-all duration-200;
+}
+
+.btn-primary:hover {
+  @apply bg-white text-black border-white;
+}
+
+.btn-secondary {
+  @apply bg-transparent text-white border border-[#515151] px-8 py-4 text-sm uppercase tracking-wider font-medium transition-all duration-200;
+}
+
+.btn-secondary:hover {
+  @apply border-[#dc5f00] text-[#dc5f00];
+}
+
+/* Card hover */
+.card-hover {
+  @apply border border-[#515151] bg-[#1a1b1f] transition-all duration-200;
+}
+
+.card-hover:hover {
+  @apply border-[#dc5f00] -translate-y-1;
+}
+
+/* Input focus */
+.input-dark {
+  @apply bg-[#111] border border-[#515151] text-white px-4 py-3 text-base transition-all duration-200 outline-none;
+}
+
+.input-dark:focus {
+  @apply border-[#dc5f00];
+}
+
+/* Detection box */
+.detection-box {
+  @apply absolute border-2 border-[#dc5f00] bg-[#dc5f00]/10;
+}
+
+.detection-label {
+  @apply absolute -top-6 left-0 bg-[#dc5f00] text-white text-xs px-2 py-1 font-medium;
+}
